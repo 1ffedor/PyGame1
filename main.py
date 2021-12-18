@@ -1,7 +1,9 @@
 import pygame
 import os
 import sys
+import random as rnd
 from game_settings import *
+
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -11,6 +13,11 @@ def load_image(name, colorkey=None):
         sys.exit()
     image = pygame.image.load(fullname)
     return image
+
+
+def update_level(heroes_count):
+    for i in range(heroes_count):
+        Hero(heroes_sprites_group)
 
 
 class Board:
@@ -65,6 +72,52 @@ class Board:
         return self.on_click(cell)
 
 
+class Hero(pygame.sprite.Sprite):
+    image = load_image("smile.png")
+
+    def __init__(self, group):
+        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
+        # Это очень важно !!!
+        super().__init__(group)
+        self.image = Hero.image
+        self.rect = self.image.get_rect()
+        self.update_position()
+        self.create_v()
+
+    def update_position(self):
+        self.rect.x = rnd.randrange(70, GAME_FIELD_WIDTH)
+        self.rect.y = rnd.randrange(70, GAME_FILED_HEIGHT)
+
+    def update(self, *args):
+        if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
+            for hero in heroes_sprites_group:
+                hero.update_position()
+
+    def move(self):
+        # движение по полю
+        # 1 - случайное направление
+        # 2 - отражение при подходе к стене
+        # 3 - случайная смена направления в движении
+        self.motion_reflection()
+        x, y = self.rect.x, self.rect.y
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+
+    def motion_reflection(self):
+        if self.rect.x > GAME_FIELD_WIDTH or self.rect.x < WIDTH - GAME_FIELD_WIDTH:
+            self.vx *= -1
+        if self.rect.y > GAME_FILED_HEIGHT or self.rect.y < HEIGHT - GAME_FILED_HEIGHT:
+            self.vy *= -1
+
+    def create_v(self):
+        self.vx = V // (rnd.random() * FPS)
+        self.vy = V // (rnd.random() * FPS)
+        print(self.vx, self.vy)
+
+    def move_random_direction(self):
+        pass
+
+
 if __name__ == '__main__':
     pygame.init()
     pygame.display.set_caption('игра')
@@ -73,41 +126,59 @@ if __name__ == '__main__':
     size = SCREEN_SIZE
     fps = FPS
     aim_size = AIM_SIZE
+    aim_size_x = AIM_SIZE[0]
+    aim_size_y = AIM_SIZE[1]
+    aim_size_x_half = AIM_SIZE_HALF[0]
+    aim_size_y_half = AIM_SIZE_HALF[1]
 
     screen = pygame.display.set_mode(size)
     screen2 = pygame.display.set_mode(size)
+    screen3 = pygame.display.set_mode(size)
 
     clock = pygame.time.Clock()
 
-    all_sprites = pygame.sprite.Group()
-
+    # группа прицел
+    aim_sprites_group = pygame.sprite.Group()
     # создадим спрайт
-    sprite = pygame.sprite.Sprite()
+    aim_sprite = pygame.sprite.Sprite()
     # определим его вид
-    sprite.image = load_image("aim2.png")
+    aim_sprite.image = load_image("aim1.png")
     # и размеры
-    sprite.rect = sprite.image.get_rect()
+    aim_sprite.rect = aim_sprite.image.get_rect()
     # добавим спрайт в группу
-    all_sprites.add(sprite)
+    aim_sprites_group.add(aim_sprite)
+
+    heroes_sprites_group = pygame.sprite.Group()
+
+    update_level(50)
 
     running = True
-
     while running:
         screen.fill('white')
-        board.render(screen)
+        #board.render(screen)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                print(board.get_click(event.pos))
+                print(board.get_click(event.pos))  # вывод координат клетки
                 pass
             if event.type == pygame.MOUSEMOTION:
                 x, y = event.pos
+
+            heroes_sprites_group.update(event)  # обновление позиции персонажей
+
         if pygame.mouse.get_focused():
             pygame.mouse.set_visible(False)
-            all_sprites.draw(screen2)
-            sprite.rect.x = x - 25  # 25 - половина размера прицела
-            sprite.rect.y = y - 25  # 25 - половина размера прицела
+
+            aim_sprite.rect.x = x - AIM_SIZE_HALF[0]  # 25 - половина размера прицела
+            aim_sprite.rect.y = y - AIM_SIZE_HALF[1]  # 25 - половина размера прицела
+            aim_sprites_group.draw(screen2)
+
+        for hero in heroes_sprites_group:
+            hero.move()
+
+        heroes_sprites_group.draw(screen3)  # отрисовка персонажей
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
