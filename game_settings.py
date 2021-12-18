@@ -1,0 +1,3 @@
+FPS = 60
+SCREEN_SIZE = (1200, 800)
+AIM_SIZE = (30, 30)

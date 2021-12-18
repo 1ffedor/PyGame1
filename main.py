@@ -1,11 +1,7 @@
 import pygame
 import os
 import sys
-
-
-FPS = 120
-SCREEN_SIZE = (1200, 800)
-X, Y = 0, 0
+from game_settings import *
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -73,7 +69,10 @@ if __name__ == '__main__':
     pygame.init()
     pygame.display.set_caption('игра')
     board = Board(30, 20)
-    size = 1200, 800
+
+    size = SCREEN_SIZE
+    fps = FPS
+    aim_size = AIM_SIZE
 
     screen = pygame.display.set_mode(size)
     screen2 = pygame.display.set_mode(size)
