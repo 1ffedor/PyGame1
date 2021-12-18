@@ -5,8 +5,8 @@ import random as rnd
 from game_settings import *
 
 
-def load_image(name, colorkey=None):
-    fullname = os.path.join('data', name)
+def load_image(name, name_directory, colorkey=None):
+    fullname = os.path.join(name_directory, name)
     # если файл не существует, то выходим
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
@@ -16,8 +16,10 @@ def load_image(name, colorkey=None):
 
 
 def update_level(heroes_count):
+    wanted = True
     for i in range(heroes_count):
-        Hero(heroes_sprites_group)
+        Hero(heroes_sprites_group, wanted)
+        wanted = False
 
 
 class Board:
@@ -73,14 +75,20 @@ class Board:
 
 
 class Hero(pygame.sprite.Sprite):
-    image = load_image("smile.png")
+    image = load_image("yellow.png", "data\smiles_1")
+    image_wanted = load_image("blue.png", "data\smiles_1")
 
-    def __init__(self, group):
+    def __init__(self, group, wanted):
         # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
         # Это очень важно !!!
         super().__init__(group)
-        self.image = Hero.image
+        if wanted:
+            self.image = Hero.image_wanted
+        else:
+            self.image = Hero.image
+        self.wanted = wanted
         self.rect = self.image.get_rect()
+        self.v = v = V // FPS
         self.update_position()
         self.create_v()
 
@@ -89,9 +97,10 @@ class Hero(pygame.sprite.Sprite):
         self.rect.y = rnd.randrange(70, GAME_FILED_HEIGHT)
 
     def update(self, *args):
-        if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
-            for hero in heroes_sprites_group:
-                hero.update_position()
+        if self.wanted:
+            if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
+                for hero in heroes_sprites_group:
+                    hero.update_position()
 
     def move(self):
         # движение по полю
@@ -102,6 +111,7 @@ class Hero(pygame.sprite.Sprite):
         x, y = self.rect.x, self.rect.y
         self.rect.x += self.vx
         self.rect.y += self.vy
+        self.move_random_direction()
 
     def motion_reflection(self):
         if self.rect.x > GAME_FIELD_WIDTH:  # правее
@@ -114,16 +124,20 @@ class Hero(pygame.sprite.Sprite):
             self.vy = abs(self.vy)
 
     def create_v(self):
-        v = V // FPS
         # print(v)
-        self.vx = rnd.uniform(-v, v)
-        self.vy = (v ** 2 - self.vx ** 2) ** 0.5
+        self.vx = int(rnd.randrange(-self.v, self.v) + rnd.uniform(-rnd.random(), rnd.random()))
+        self.vy = (self.v ** 2 - self.vx ** 2) ** 0.5
+        if rnd.random() > 0.5:
+            self.vy *= -1
+        if rnd.random() > 0.5:
+            self.vx *= -1
         # self.vx = V // (rnd.random() * FPS)
         # self.vy = V // (rnd.random() * FPS)
         # print(self.vx, self.vy)
 
     def move_random_direction(self):
-
+        if rnd.random() > 0.99:
+            self.create_v()
 
 
 if __name__ == '__main__':
@@ -150,7 +164,7 @@ if __name__ == '__main__':
     # создадим спрайт
     aim_sprite = pygame.sprite.Sprite()
     # определим его вид
-    aim_sprite.image = load_image("aim1.png")
+    aim_sprite.image = load_image("aim1.png", "data")
     # и размеры
     aim_sprite.rect = aim_sprite.image.get_rect()
     # добавим спрайт в группу
@@ -158,18 +172,18 @@ if __name__ == '__main__':
 
     heroes_sprites_group = pygame.sprite.Group()
 
-    update_level(100)
+    update_level(200)
 
     running = True
     while running:
         screen.fill('white')
         #board.render(screen)
-
+        heroes_sprites_group.draw(screen3)  # отрисовка персонажей
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                print(board.get_click(event.pos))  # вывод координат клетки
+                print(board.get_click(event.pos))  # вывод координат клеткиad
                 pass
             if event.type == pygame.MOUSEMOTION:
                 x, y = event.pos
@@ -186,7 +200,7 @@ if __name__ == '__main__':
         for hero in heroes_sprites_group:
             hero.move()
 
-        heroes_sprites_group.draw(screen3)  # отрисовка персонажей
+
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
