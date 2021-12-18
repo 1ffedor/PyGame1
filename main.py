@@ -104,18 +104,26 @@ class Hero(pygame.sprite.Sprite):
         self.rect.y += self.vy
 
     def motion_reflection(self):
-        if self.rect.x > GAME_FIELD_WIDTH or self.rect.x < WIDTH - GAME_FIELD_WIDTH:
-            self.vx *= -1
-        if self.rect.y > GAME_FILED_HEIGHT or self.rect.y < HEIGHT - GAME_FILED_HEIGHT:
-            self.vy *= -1
+        if self.rect.x > GAME_FIELD_WIDTH:  # правее
+            self.vx = -abs(self.vx)
+        elif self.rect.x < 50:  # левее
+            self.vx = abs(self.vx)
+        if self.rect.y > GAME_FILED_HEIGHT:  # выше
+            self.vy = -abs(self.vy)
+        elif self.rect.y < 50:  # ниже
+            self.vy = abs(self.vy)
 
     def create_v(self):
-        self.vx = V // (rnd.random() * FPS)
-        self.vy = V // (rnd.random() * FPS)
-        print(self.vx, self.vy)
+        v = V // FPS
+        # print(v)
+        self.vx = rnd.uniform(-v, v)
+        self.vy = (v ** 2 - self.vx ** 2) ** 0.5
+        # self.vx = V // (rnd.random() * FPS)
+        # self.vy = V // (rnd.random() * FPS)
+        # print(self.vx, self.vy)
 
     def move_random_direction(self):
-        pass
+
 
 
 if __name__ == '__main__':
@@ -150,7 +158,7 @@ if __name__ == '__main__':
 
     heroes_sprites_group = pygame.sprite.Group()
 
-    update_level(50)
+    update_level(100)
 
     running = True
     while running:
