@@ -6,6 +6,10 @@ from game_settings import *
 from colors import *
 
 
+COLOR_NOT_WANTED = ""
+COLOR_WANTED = ""
+
+
 def load_image(name, name_directory, colorkey=None):
     fullname = os.path.join(name_directory, name)
     # если файл не существует, то выходим
@@ -23,12 +27,17 @@ def update_level(heroes_count):
         wanted = False
 
 
-def choose_color(name_directory, color_used=""):
-    while True:
-        color = COLORS[rnd.randrange(len(COLORS))]
-        if color != color_used:
-            return color
-            break
+def choose_color(name_directory, *colors_used):
+    colors = COLORS[:]
+    if colors_used:
+        for color in colors_used:
+            if color in colors:
+                colors.remove(color)
+    color_not_wanted = colors[rnd.randrange(len(colors))]
+    colors.remove(color_not_wanted)
+    color_wanted = colors[rnd.randrange(len(colors))]
+    return (color_not_wanted, color_wanted)
+
 
 
 class Board:
@@ -84,9 +93,9 @@ class Board:
 
 
 class Hero(pygame.sprite.Sprite):
-    color_hero_not_wanted = choose_color("data\smiles_1")
+    color_hero_not_wanted, color_hero_wanted = choose_color("data\smiles_1")
     image_not_wanted = load_image(color_hero_not_wanted, "data\smiles_1")
-    image_wanted = load_image(choose_color("data\smiles_1", color_hero_not_wanted), "data\smiles_1")
+    image_wanted = load_image(color_hero_wanted, "data\smiles_1")
 
     def __init__(self, group, wanted):
         # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
@@ -98,14 +107,18 @@ class Hero(pygame.sprite.Sprite):
             self.image = Hero.image_not_wanted
         self.wanted = wanted
         self.rect = self.image.get_rect()
-        self.v = v = V // FPS
+        self.v = V // FPS
         self.update_position()
         self.create_v()
+        self.color_hero_not_wanted = Hero.color_hero_not_wanted
+        self.color_hero_wanted = Hero.color_hero_wanted
 
-    def change_color(self):
-        color_hero_not_wanted = choose_color("data\smiles_1")
+    def change_color(self, *colors_used):
+        color_hero_not_wanted, color_hero_wanted = choose_color("data\smiles_1")
         image_not_wanted = load_image(color_hero_not_wanted, "data\smiles_1")
-        image_wanted = load_image(choose_color("data\smiles_1", color_hero_not_wanted), "data\smiles_1")
+        image_wanted = load_image(color_hero_wanted, "data\smiles_1")
+        self.color_hero_not_wanted = color_hero_not_wanted
+        self.color_hero_wanted = color_hero_wanted
         if self.wanted:
             self.image = image_wanted
         else:
@@ -118,8 +131,9 @@ class Hero(pygame.sprite.Sprite):
     def update(self, *args):
         if self.wanted:
             if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
-                self.change_color()
                 for hero in heroes_sprites_group:
+                    # hero.change_v(2)
+                    hero.change_color(self.color_hero_wanted, self.color_hero_not_wanted)
                     hero.update_position()
 
     def move(self):
@@ -149,11 +163,15 @@ class Hero(pygame.sprite.Sprite):
         self.vy = (self.v ** 2 - self.vx ** 2) ** 0.5
         if rnd.random() > 0.5:
             self.vy *= -1
-        if rnd.random() > 0.1:
+        if rnd.random() > 0.5:
             self.vx *= -1
         # self.vx = V // (rnd.random() * FPS)
         # self.vy = V // (rnd.random() * FPS)
         # print(self.vx, self.vy)
+
+    def change_v(self, k):
+        self.v += k
+        self.create_v()
 
     def move_random_direction(self):
         if rnd.random() > 0.99:
@@ -192,7 +210,7 @@ if __name__ == '__main__':
 
     heroes_sprites_group = pygame.sprite.Group()
 
-    update_level(200)
+    update_level(20)
 
     running = True
     while running:
