@@ -4,6 +4,7 @@ import sys
 import random as rnd
 from game_settings import *
 from colors import *
+import time
 
 
 COLOR_NOT_WANTED = ""
@@ -22,6 +23,8 @@ def load_image(name, name_directory, colorkey=None):
 
 def update_level(heroes_count):
     wanted = True
+    table_info = True
+    Hero(heroes_sprites_group, wanted, table_info)
     for i in range(heroes_count):
         Hero(heroes_sprites_group, wanted)
         wanted = False
@@ -97,12 +100,17 @@ class Hero(pygame.sprite.Sprite):
     image_not_wanted = load_image(color_hero_not_wanted, "data\smiles_1")
     image_wanted = load_image(color_hero_wanted, "data\smiles_1")
 
-    def __init__(self, group, wanted):
+    def __init__(self, group, wanted, table_info=False):
         # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
         # Это очень важно !!!
         super().__init__(group)
+        # image_wanted, image_not_wanted, color_hero_wanted, color_hero_not_wanted = self.change_color()
+        # self.color_hero_wanted, self.color_hero_not_wanted = color_hero_wanted, color_hero_not_wanted
+        self.score = 0
+        self.table_info = table_info
         if wanted:
             self.image = Hero.image_wanted
+            self.update_info_board(self.score)
         else:
             self.image = Hero.image_not_wanted
         self.wanted = wanted
@@ -110,42 +118,53 @@ class Hero(pygame.sprite.Sprite):
         self.v = V // FPS
         self.update_position()
         self.create_v()
-        self.color_hero_not_wanted = Hero.color_hero_not_wanted
-        self.color_hero_wanted = Hero.color_hero_wanted
 
     def change_color(self, *colors_used):
         color_hero_not_wanted, color_hero_wanted = choose_color("data\smiles_1")
         image_not_wanted = load_image(color_hero_not_wanted, "data\smiles_1")
         image_wanted = load_image(color_hero_wanted, "data\smiles_1")
-        self.color_hero_not_wanted = color_hero_not_wanted
-        self.color_hero_wanted = color_hero_wanted
-        if self.wanted:
-            self.image = image_wanted
-        else:
-            self.image = image_not_wanted
+        return (image_wanted, image_not_wanted, color_hero_wanted, color_hero_not_wanted)
+
+    def create_colors(self):
+        pass
+
+    def update_info_board(self, score):
+        InfoBoard(screen4, Hero.image_wanted, score)
 
     def update_position(self):
-        self.rect.x = rnd.randrange(70, GAME_FIELD_WIDTH)
-        self.rect.y = rnd.randrange(70, GAME_FILED_HEIGHT)
+        if self.table_info:
+            self.rect.x, self.rect.y = INFO_BOARD_WIDTH + (WIDTH - INFO_BOARD_WIDTH) // 5, HEIGHT // 16
+        else:
+            self.rect.x = rnd.randrange(70, GAME_FIELD_WIDTH)
+            self.rect.y = rnd.randrange(70, GAME_FILED_HEIGHT)
 
     def update(self, *args):
-        if self.wanted:
+        if self.wanted and not self.table_info:
             if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
+                #self.create_colors()
+                # for hero in heroes_sprites_group:
+                #     # hero.change_v(2)
+                #     #hero.change_color()
+                #     hero.jump()
                 for hero in heroes_sprites_group:
                     # hero.change_v(2)
-                    hero.change_color(self.color_hero_wanted, self.color_hero_not_wanted)
+                    #hero.change_color()
                     hero.update_position()
+                self.score += 1
+                self.update_info_board(self.score)
+                print(self.score)
 
     def move(self):
-        # движение по полю
-        # 1 - случайное направление
-        # 2 - отражение при подходе к стене
-        # 3 - случайная смена направления в движении
-        self.motion_reflection()
-        x, y = self.rect.x, self.rect.y
-        self.rect.x += self.vx
-        self.rect.y += self.vy
-        self.move_random_direction()
+        if not self.table_info:
+            # движение по полю
+            # 1 - случайное направление
+            # 2 - отражение при подходе к стене
+            # 3 - случайная смена направления в движении
+            self.motion_reflection()
+            x, y = self.rect.x, self.rect.y
+            self.rect.x += self.vx
+            self.rect.y += self.vy
+            self.move_random_direction()
 
     def motion_reflection(self):
         if self.rect.x > GAME_FIELD_WIDTH:  # правее
@@ -159,6 +178,7 @@ class Hero(pygame.sprite.Sprite):
 
     def create_v(self):
         # print(v)
+        #self.vx = int([rnd.randrange(-self.v, -self.v // 2), rnd.randrange(self.v // 2, self.v)][rnd.randrange(1)] + rnd.uniform(-rnd.random(), rnd.random()))
         self.vx = int(rnd.randrange(-self.v, self.v) + rnd.uniform(-rnd.random(), rnd.random()))
         self.vy = (self.v ** 2 - self.vx ** 2) ** 0.5
         if rnd.random() > 0.5:
@@ -177,6 +197,29 @@ class Hero(pygame.sprite.Sprite):
         if rnd.random() > 0.99:
             self.create_v()
 
+    def jump(self):
+        self.rect = self.rect.move(rnd.randrange(3) - 1, rnd.randrange(3) - 1)
+
+
+class InfoBoard:
+
+    def __init__(self, screen, image_wanted, score):
+        self.screen = screen
+        self.draw()
+
+    def draw(self):
+        self.draw_line()
+        self.draw_rect()
+
+    def draw_line(self):
+        pygame.draw.line(self.screen, "black", [INFO_BOARD_WIDTH, 0],
+                         [INFO_BOARD_WIDTH, INFO_BOARD_HEIGHT], 4)
+
+    def draw_rect(self):
+        x1, y1 = INFO_BOARD_WIDTH + (WIDTH - INFO_BOARD_WIDTH) // 5, HEIGHT // 16
+        a = 200
+        pygame.draw.rect(self.screen, "black", (x1, y1, a, a), 4)
+
 
 if __name__ == '__main__':
     pygame.init()
@@ -194,6 +237,9 @@ if __name__ == '__main__':
     screen = pygame.display.set_mode(size)
     screen2 = pygame.display.set_mode(size)
     screen3 = pygame.display.set_mode(size)
+    screen4 = pygame.display.set_mode(size)
+
+    game_info = InfoBoard(screen4, Hero.image_wanted, 0)
 
     clock = pygame.time.Clock()
 
@@ -210,13 +256,13 @@ if __name__ == '__main__':
 
     heroes_sprites_group = pygame.sprite.Group()
 
-    update_level(20)
-
+    update_level(200)
     running = True
     while running:
         screen.fill('white')
-        #board.render(screen)
-        heroes_sprites_group.draw(screen3)  # отрисовка персонажей
+        # board.render(screen)
+        heroes_sprites_group.draw(screen3)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -238,6 +284,7 @@ if __name__ == '__main__':
         for hero in heroes_sprites_group:
             hero.move()
 
+        game_info.draw()
 
         clock.tick(FPS)
         pygame.display.flip()
