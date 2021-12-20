@@ -62,10 +62,9 @@ class Board:
         cell = self.get_cell(mouse_pos)
         return self.on_click(cell)
 
-
 class Game:
 
-    def __init__(self, lvl):
+    def __init__(self):
         pygame.init()
         pygame.display.set_caption('игра')
 
@@ -92,10 +91,7 @@ class Game:
 
         self.heroes_sprites_group = pygame.sprite.Group()
 
-        self.x, self.y = 10, 10
-        self.lvl = lvl
-
-        self.update_level(self.lvl)
+        self.update_level(1)
 
         self.running = True
 
@@ -106,22 +102,21 @@ class Game:
             self.heroes_sprites_group.draw(self.screen3)
 
             for event in pygame.event.get():
-
-                self.heroes_sprites_group.update(event)  # обновление позиции персонажей
-
                 if event.type == pygame.QUIT:
                     self.running = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # print(board.get_click(event.pos))  # вывод координат клеткиad
                     pass
                 if event.type == pygame.MOUSEMOTION:
-                    self.x, self.y = event.pos
+                    x, y = event.pos
+
+                self.heroes_sprites_group.update(event)  # обновление позиции персонажей
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
 
-                self.aim_sprite.rect.x = self.x - self.aim_size_x_half  # 25 - половина размера прицела
-                self.aim_sprite.rect.y = self.y - self.aim_size_y_half  # 25 - половина размера прицела
+                self.aim_sprite.rect.x = x - self.aim_size_x_half  # 25 - половина размера прицела
+                self.aim_sprite.rect.y = y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.screen2)
 
             for hero in self.heroes_sprites_group:
@@ -144,10 +139,9 @@ class Game:
     def update_level(self, heroes_count):
         wanted = True
         table_info = True
-        print(10)
-        Hero(self.heroes_sprites_group, wanted, self.lvl, table_info)
+        Hero(self.heroes_sprites_group, wanted, table_info)
         for i in range(heroes_count):
-            Hero(self.heroes_sprites_group, self.lvl, wanted)
+            Hero(self.heroes_sprites_group, wanted)
             wanted = False
 
     def choose_color(self, name_directory, *colors_used):
@@ -167,7 +161,7 @@ class Hero(pygame.sprite.Sprite):
     # image_not_wanted = Game.load_image(color_hero_not_wanted, "data\smiles_1")
     # image_wanted = Game.load_image(color_hero_wanted, "data\smiles_1")
 
-    def __init__(self, heroes_sprites_group, wanted, lvl, table_info=False):
+    def __init__(self, heroes_sprites_group, wanted, table_info=False):
         # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
         # Это очень важно !!!
         super().__init__(heroes_sprites_group)
@@ -178,7 +172,6 @@ class Hero(pygame.sprite.Sprite):
         self.heroes_sprites_group = heroes_sprites_group
 
         self.score = 0
-        self.lvl = lvl
 
         self.table_info = table_info
 
@@ -205,11 +198,6 @@ class Hero(pygame.sprite.Sprite):
         return (image_wanted, image_not_wanted, color_hero_wanted, color_hero_not_wanted)
 
     def create_colors(self):
-        pass
-
-    def change_lvl(self):
-        # менять уровень в зависимости от кол - ва очков
-        # чем больше уровень, тем выше скорость движения, больше человечков
         pass
 
     def choose_color(self, name_directory, *colors_used):
@@ -254,10 +242,7 @@ class Hero(pygame.sprite.Sprite):
                 for hero in self.heroes_sprites_group:
                     # hero.change_v(2)
                     #hero.change_color()
-                    self.heroes_sprites_group.remove(hero)
-                    # hero.update_position()
-                self.lvl += 1
-                Game(self.lvl).run()
+                    hero.update_position()
                 self.score += 1
                 self.update_info_board(self.score)
                 print(self.score)
@@ -393,4 +378,4 @@ if __name__ == '__main__':
     #     clock.tick(FPS)
     #     pygame.display.flip()
     # pygame.quit()
-    Game(1).run()
+    Game().run()
