@@ -220,7 +220,6 @@ if __name__ == '__main__':
         for hero in heroes_sprites_group:
             hero.move()
 
-
         clock.tick(FPS)
         pygame.display.flip()
     pygame.quit()
