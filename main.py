@@ -15,7 +15,8 @@ COLOR_WANTED = ""
 
 class Game:
 
-    def __init__(self, PICTURES, DIRECTORY_NAME, level_start, best_score):
+    def __init__(self, pictures_heroes_animation_small, pictures_heroes_large, directory_heroes_animation_small_name,
+                 directory_heroes_large_name, level_start, best_score):
         pygame.init()
         pygame.display.set_caption('игра')
 
@@ -49,19 +50,23 @@ class Game:
         self.running = True
         self.score = 0
 
-        self.pictures = PICTURES[:]
+        self.pictures_heroes_animation_small = pictures_heroes_animation_small
+        self.pictures_heroes_large = pictures_heroes_large
 
-        self.directory_name = DIRECTORY_NAME
+        self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
+        self.directory_heroes_large_name = directory_heroes_large_name
+
         self.x, self.y = 0, 0
 
         self.delta_time = 1  # секунд
-        self.level_time = 20  # секунд
+        self.level_time = 200  # секунд
 
         self.ismiss = True  # нужно ли уменьшать время
 
     def run(self):
         self.update_level(self.level)
 
+        i = 0
         x, y = self.x, self.y
         # t = time.time()
 
@@ -71,16 +76,16 @@ class Game:
             # board.render(screen)
             self.heroes_sprites_group.draw(self.screen3)
 
-            self.level_time = max(1, self.level_time)
+            self.level_time = max(0, self.level_time)
 
             seconds = round(self.level_time + (start_ticks - pygame.time.get_ticks()) / 1000)  # calculate how many seconds
-
+            # print(seconds)
             seconds_res = time.gmtime(seconds)
             current_level_time = time.strftime("%S", seconds_res)
 
             InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
 
-            if seconds == 0:
+            if seconds <= 0:
                 self.running = False
 
             self.ismiss = True  # нужно ли уменьшать время
@@ -101,8 +106,12 @@ class Game:
                 self.aim_sprite.rect.x = x - self.aim_size_x_half  # 25 - половина размера прицела
                 self.aim_sprite.rect.y = y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.screen2)
-
+            # self.heroes_sprites_group.update()
+            i += 1
+            i %= 8
             for hero in self.heroes_sprites_group:
+                if i == 7:
+                    hero.update_image()
                 if hero.ismiss() and self.ismiss:
                     self.level_time -= 5
                     self.level_time = max(1, self.level_time)
@@ -142,27 +151,34 @@ class Game:
     def update_level(self, heroes_count):
         wanted = True
         table_info = True
-        image_wanted, images_not_wanted = self.choose_picture(self.directory_name)
-        Hero(self.heroes_sprites_group, wanted, self.level, image_wanted, images_not_wanted, table_info)
+        image_wanted, image_wanted_large, images_not_wanted = self.choose_picture()
+        Hero(self.heroes_sprites_group, wanted, self.level, image_wanted, image_wanted_large, images_not_wanted, table_info)
         for i in range(heroes_count):
-            Hero(self.heroes_sprites_group, wanted, self.level, image_wanted, images_not_wanted)
+            Hero(self.heroes_sprites_group, wanted, self.level, image_wanted, image_wanted_large, images_not_wanted)
             wanted = False
             table_info = False
 
-    def choose_picture(self, directory_name, *pictures_used):
-        pictures = self.pictures[:]
-        directory_name = self.directory_name
+    def choose_picture(self, *pictures_used):
+        pictures = self.pictures_heroes_animation_small[:]
+        directory_heroes_animation_small_name = self.directory_heroes_animation_small_name  # директория с фреймами для анимации
+        directory_heroes_large_name = self.directory_heroes_large_name
+
         # if pictures_used:
         #     for picture in pictures_used:
         #         if picture in pictures:
         #             pictures.remove(picture)
-        pictures_not_wanted = self.choose_pictures_not_wanted(self.pictures, self.level)
+
+        pictures_not_wanted = self.choose_pictures_not_wanted(pictures, self.level)
         for picture_not_wanted in pictures_not_wanted:
             pictures.remove(picture_not_wanted)
         picture_wanted = pictures[rnd.randrange(len(pictures))]
-        images_not_wanted = [self.load_image(picture, directory_name) for picture in pictures_not_wanted]
-        image_wanted = self.load_image(picture_wanted, directory_name)
-        return image_wanted, images_not_wanted
+        picture_wanted_large = picture_wanted.split('_')[1] + '_large.png'
+
+        images_not_wanted = [self.load_image(picture, directory_heroes_animation_small_name) for picture in pictures_not_wanted]
+        image_wanted = self.load_image(picture_wanted, directory_heroes_animation_small_name)
+        image_wanted_large = self.load_image(picture_wanted_large, directory_heroes_large_name)
+
+        return image_wanted, image_wanted_large, images_not_wanted
 
     def choose_pictures_not_wanted(self, pictures, level):
         pictures = pictures[:]
@@ -184,7 +200,7 @@ class Hero(pygame.sprite.Sprite):
     # image_not_wanted = Game.load_image(color_hero_not_wanted, "data\smiles_1")
     # image_wanted = Game.load_image(color_hero_wanted, "data\smiles_1")
 
-    def __init__(self, heroes_sprites_group, wanted, level, image_wanted, images_not_wanted, table_info=False):
+    def __init__(self, heroes_sprites_group, wanted, level, image_wanted, image_wanted_large, images_not_wanted, table_info=False):
         # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
         # Это очень важно !!!
         super().__init__(heroes_sprites_group)
@@ -196,40 +212,45 @@ class Hero(pygame.sprite.Sprite):
 
         self.score = 0
         self.update_level = False
-
-        self.level = level
-
-        self.table_info = table_info
-
-        if wanted:
-            self.image = image_wanted
-        else:
-            self.image = images_not_wanted[rnd.randrange(2)]
-
-        self.wanted = wanted
-
-        self.rect = self.image.get_rect()
-
-        self.v = V // FPS
-
-        self.update_position()
-
-        self.pictures = PICTURES
-        self.create_v()
-
         self.miss = False
 
+        self.level = level
+        self.table_info = table_info
+        self.wanted = wanted
+        self.v = V // FPS
 
-    # def choose_color(self, name_directory, *pictures_used):
-    #     pictures = self.pictures[:]
-    #     if pictures_used:
-    #         for picture in pictures_used:
-    #             if picture in pictures:
-    #                 pictures.remove(picture)
-    #     picture_not_wanted = pictures[rnd.randrange(len(pictures))]
-    #     pictures.remove(picture_not_wanted)
-    #     picture_wanted = pictures[rnd.randrange(len(pictures))]
-    #     return (picture_not_wanted, picture_wanted)
+        if table_info:
+            self.image = image_wanted_large
+        else:
+            if wanted:
+                sheet = image_wanted
+            else:
+                sheet = images_not_wanted[rnd.randrange(2)]
+            self.cur_frame = 0
+            self.frames = []
+            self.cut_sheet(sheet, 8, 1)
+
+            self.image = self.frames[self.cur_frame]
+            # self.rect = self.rect.move(0, 0)
+        self.rect = self.image.get_rect()
+        self.update_position()
+
+        # self.pictures = PICTURES
+        self.create_v()
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, 35, 35)
+        self.rect = pygame.Rect(0, 0, 35, 35)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(
+                    frame_location, self.rect.size)))
+
+    def update_image(self):
+        if not self.table_info:
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = self.frames[self.cur_frame]
 
     def change_color(self, *pictures_used):
         picture_hero_not_wanted, picture_hero_wanted = self.choose_color("data\smiles_1")
@@ -268,6 +289,7 @@ class Hero(pygame.sprite.Sprite):
         return image
 
     def update(self, *args):
+
         if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
             if self.wanted and not self.table_info:
                 self.update_level = True
@@ -324,8 +346,8 @@ class Hero(pygame.sprite.Sprite):
 
     def create_v(self):
         # print(v)
-        #self.vx = int([rnd.randrange(-self.v, -self.v // 2), rnd.randrange(self.v // 2, self.v)][rnd.randrange(1)] + rnd.uniform(-rnd.random(), rnd.random()))
-        self.vx = int(rnd.randrange(-self.v, self.v) + rnd.uniform(-rnd.random(), rnd.random()))
+        self.vx = int([rnd.randrange(-self.v, -self.v // 3), rnd.randrange(self.v // 3, self.v)][rnd.randrange(1)] + rnd.uniform(-rnd.random(), rnd.random()))
+        # self.vx = int(rnd.randrange(-self.v, self.v) + rnd.uniform(-rnd.random(), rnd.random()))
         self.vy = (self.v ** 2 - self.vx ** 2) ** 0.5
         if rnd.random() > 0.5:
             self.vy *= -1
@@ -340,7 +362,7 @@ class Hero(pygame.sprite.Sprite):
         self.create_v()
 
     def move_random_direction(self):
-        if rnd.random() > 0.99:
+        if rnd.random() > 0.995:
             self.create_v()
 
     def jump(self):
@@ -352,6 +374,7 @@ class InfoBoard:
     def __init__(self, screen, score, best_score, current_level_time):
         self.screen = screen
         self.score = score
+        self.best_score = best_score
 
         self.current_level_time = current_level_time
         self.font = pygame.font.Font(None, 70)
@@ -362,8 +385,8 @@ class InfoBoard:
     def draw(self):
         self.draw_line()
         self.draw_rect()
-        self.draw_text(self.current_level_time, TIME_TEXT_X, TIME_TEXT_Y)  # таймер
-        self.draw_text(self.score, SCORE_TEXT_X, SCORE_TEXT_Y)  # счет
+        self.draw_text(f"Время: {self.current_level_time}", TIME_TEXT_X, TIME_TEXT_Y)  # таймер
+        self.draw_text(f"Счёт: {self.score}", SCORE_TEXT_X, SCORE_TEXT_Y)  # счет
 
     def draw_text(self, to_write, x, y):
         text = self.font.render(f"{to_write}", True, "black")
@@ -373,13 +396,12 @@ class InfoBoard:
 
     def draw_line(self):
         pygame.draw.line(self.screen, "black", [INFO_BOARD_X, 0],
-                         [INFO_BOARD_X, INFO_BOARD_Y], 4)
+                         [INFO_BOARD_X, INFO_BOARD_Y], 6)
 
     def draw_rect(self):
         x1, y1 = INFO_BOARD_X + (WIDTH - INFO_BOARD_Y) // 5, HEIGHT // 16
-        a = 200
-        pygame.draw.rect(self.screen, "black", (x1, y1, a, a), 4)
-
+        a = RECT_A
+        pygame.draw.rect(self.screen, "black", (x1, y1, a, a), 6)
 
 
 # class Board:
@@ -499,5 +521,6 @@ if __name__ == '__main__':
     #     clock.tick(FPS)
     #     pygame.display.flip()
     # pygame.quit()
-    level_start, best_score = 1, 1
-    Game(PICTURES, DIRECTORY_NAME, level_start, best_score).run()
+    level_start, best_score = 100, 1
+    Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
+         DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()
