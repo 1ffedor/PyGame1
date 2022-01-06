@@ -8,25 +8,86 @@ import time
 import datetime
 
 
-
 COLOR_NOT_WANTED = ""
 COLOR_WANTED = ""
 
 
 class MainMenu:
 
-    def __init__(self):
+    def __init__(self, ):
         self.pygame_init()
         pygame.display.set_caption('игра')
 
+        # константы
         self.size = SCREEN_SIZE
         self.fps = FPS
+
         self.aim_size = AIM_SIZE
         self.aim_size_x = AIM_SIZE[0]
         self.aim_size_y = AIM_SIZE[1]
         self.aim_size_x_half = AIM_SIZE_HALF[0]
         self.aim_size_y_half = AIM_SIZE_HALF[1]
 
+        self.title_sprite_directory = MAIN_MENU_TITLE_SPRITE_DIRECTORY
+        self.title_sprite_name = MAIN_MENU_TITLE_SPRITE_NAME
+        self.title_sprite_x = MAIN_MENU_TITLE_SPRITE_X
+        self.title_sprite_y = MAIN_MENU_TITLE_SPRITE_Y
+
+        self.best_score_and_coins_sprite_directory = MAIN_MENU_BEST_SCORE_AND_COINS_SPRITE_DIRECTORY
+        self.best_score_and_coins_sprite_name = MAIN_MENU_BEST_SCORE_AND_COINS_SPRITE_NAME
+
+        self.best_score_and_coins_sprite_x = MAIN_MENU_BEST_SCORE_AND_COINS_SPRITE_X
+        self.best_score_and_coins_sprite_y = MAIN_MENU_BEST_SCORE_AND_COINS_SPRITE_Y
+
+        self.best_score_text_center_x = MAIN_MENU_BEST_SCORE_TEXT_CENTER_X
+        self.best_score_text_center_y = MAIN_MENU_BEST_SCORE_TEXT_CENTER_Y
+        self.coins_count_text_center_x = MAIN_MENU_COINS_COUNT_TEXT_CENTER_X
+        self.coins_count_text_center_y = MAIN_MENU_COINS_COUNT_TEXT_CENTER_Y
+        self.best_score_and_coins_count_text_color = MAIN_MENU_BEST_SCORE_AND_COINS_COUNT_TEXT_COLOR
+        self.best_score_and_coins_count_text_size = MAIN_MENU_BEST_SCORE_AND_COINS_COUNT_TEXT_SIZE
+
+        self.play_sprite_directory = MAIN_MENU_PLAY_SPRITE_DIRECTORY
+        self.play_sprite_name = MAIN_MENU_PLAY_SPRITE_NAME
+        self.play_sprite_x = MAIN_MENU_PLAY_SPRITE_X
+        self.play_sprite_y = MAIN_MENU_PLAY_SPRITE_Y
+        self.play_sprite_wight = MAIN_MENU_PLAY_SPRITE_WIGHT
+        self.play_sprite_height = MAIN_MENU_PLAY_SPRITE_HEIGHT
+
+        self.play_text_center_x = MAIN_MENU_PLAY_TEXT_CENTER_X
+        self.play_text_center_y = MAIN_MENU_PLAY_TEXT_CENTER_Y
+        self.play_text_color = MAIN_MENU_PLAY_TEXT_COLOR
+        self.play_text_size = MAIN_MENU_PLAY_TEXT_SIZE
+
+        self.set_of_heroes_sprite_directory = MAIN_MENU_SET_OF_HEROES_SPRITE_DIRECTORY
+        self.set_of_heroes_sprite_name = MAIN_MENU_SET_OF_HEROES_SPRITE_NAME
+        self.set_of_heroes_sprite_x = MAIN_MENU_SET_OF_HEROES_SPRITE_X
+        self.set_of_heroes_sprite_y = MAIN_MENU_SET_OF_HEROES_SPRITE_Y
+
+        self.set_of_heroes_lock_directory = MAIN_MENU_SET_OF_HEROES_LOCK_DIRECTORY
+        self.set_of_heroes_lock_sprite_name = MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_NAME
+        self.set_of_heroes_lock_sprite_x = MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_X
+        self.set_of_heroes_lock_sprite_y = MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_Y
+
+        self.set_of_heroes_lock_text_center_x = MAIN_MENU_SET_OF_HEROES_LOCK_TEXT_CENTER_X
+        self.set_of_heroes_lock_text_center_y = MAIN_MENU_SET_OF_HEROES_LOCK_TEXT_CENTER_Y
+        self.set_of_heroes_lock_text_size = MAIN_MENU_SET_OF_HEROES_LOCK_TEXT_SIZE
+
+        self.arrow_left_sprite_directory = MAIN_MENU_ARROW_LEFT_SPRITE_DIRECTORY
+        self.arrow_left_sprite_name = MAIN_MENU_ARROW_LEFT_SPRITE_NAME
+        self.arrow_left_sprite_x = MAIN_MENU_ARROW_LEFT_SPRITE_X
+        self.arrow_left_sprite_y = MAIN_MENU_ARROW_LEFT_SPRITE_Y
+
+        self.arrow_right_sprite_directory = MAIN_MENU_ARROW_RIGHT_SPRITE_DIRECTORY
+        self.arrow_right_sprite_name = MAIN_MENU_ARROW_RIGHT_SPRITE_NAME
+        self.arrow_right_sprite_x = MAIN_MENU_ARROW_RIGHT_SPRITE_X
+        self.arrow_right_sprite_y = MAIN_MENU_ARROW_RIGHT_SPRITE_Y
+
+        self.font_directory = FONT_DIRECTORY
+
+        self.level = LEVEL_START
+        self.best_score = best_score
+
+        # экраны
         self.screen = pygame.display.set_mode(self.size)
         self.screen2 = pygame.display.set_mode(self.size)
         self.screen3 = pygame.display.set_mode(self.size)
@@ -34,41 +95,102 @@ class MainMenu:
 
         self.clock = pygame.time.Clock()
 
+        # группы спрайтов
         self.aim_sprites_group = pygame.sprite.Group()
         self.aim_sprite = pygame.sprite.Sprite()  # создадим спрайт
-        self.aim_sprite.image = self.load_image("aim1.png", "data")  # определим его вид
+        self.aim_sprite.image = self.load_image("aim2.png", "data")  # определим его вид
         self.aim_sprite.rect = self.aim_sprite.image.get_rect()  # и размеры
         self.aim_sprites_group.add(self.aim_sprite)  # добавим спрайт в группу
 
         self.heroes_sprites_group = pygame.sprite.Group()
 
-        self.level = level_start
-        self.best_score = best_score
+        self.static_elements_sprites_group = pygame.sprite.Group()
+        self.heroes_lock = pygame.sprite.Group()
+
+        # создаем спрайты
+        self.title_sprite = pygame.sprite.Sprite()
+        self.title_sprite.image = self.load_image(f"{self.title_sprite_name}", f"{self.title_sprite_directory}")  # определим его вид
+        self.title_sprite.rect = self.title_sprite.image.get_rect()  # и размеры
+        self.title_sprite.rect.x = self.title_sprite_x
+        self.title_sprite.rect.y = self.title_sprite_y
+        self.static_elements_sprites_group.add(self.title_sprite)  # добавим спрайт в группу
+
+        self.best_score_and_coins_sprite = pygame.sprite.Sprite()
+        self.best_score_and_coins_sprite.image = \
+            self.load_image(f"{self.best_score_and_coins_sprite_name}",
+                            f"{self.best_score_and_coins_sprite_directory}")  # определим его вид
+        self.best_score_and_coins_sprite.rect = self.best_score_and_coins_sprite.image.get_rect()  # и размеры
+        self.best_score_and_coins_sprite.rect.x = self.best_score_and_coins_sprite_x
+        self.best_score_and_coins_sprite.rect.y = self.best_score_and_coins_sprite_y
+        self.static_elements_sprites_group.add(self.best_score_and_coins_sprite)  # добавим спрайт в группу
+
+        self.set_of_heroes_lock_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.set_of_heroes_lock_sprite.image = \
+            self.load_image(f"{self.set_of_heroes_lock_sprite_name}",
+                            f"{self.set_of_heroes_lock_directory}")  # определим его вид
+        self.set_of_heroes_lock_sprite.rect = self.set_of_heroes_lock_sprite.image.get_rect()  # и размеры
+        self.set_of_heroes_lock_sprite.rect.x = self.set_of_heroes_lock_sprite_x
+        self.set_of_heroes_lock_sprite.rect.y = self.set_of_heroes_lock_sprite_y
+        self.heroes_lock.add(self.set_of_heroes_lock_sprite)  # добавим спрайт в группу
+
+        self.set_of_heroes_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.set_of_heroes_sprite.image = \
+            self.load_image(f"{self.set_of_heroes_sprite_name}",
+                            f"{self.set_of_heroes_sprite_directory}")  # определим его вид
+        self.set_of_heroes_sprite.rect = self.set_of_heroes_sprite.image.get_rect()  # и размеры
+        self.set_of_heroes_sprite.rect.x = self.set_of_heroes_sprite_x
+        self.set_of_heroes_sprite.rect.y = self.set_of_heroes_sprite_y
+        self.static_elements_sprites_group.add(self.set_of_heroes_sprite)  # добавим спрайт в группу
+
+        # кнопка играть
+        self.play_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.play_sprite.image = \
+            self.load_image(f"{self.play_sprite_name}",
+                            f"{self.play_sprite_directory}")  # определим его вид
+        self.play_sprite.rect = self.play_sprite.image.get_rect()  # и размеры
+        self.play_sprite.rect.x = self.play_sprite_x
+        self.play_sprite.rect.y = self.play_sprite_y
+        self.static_elements_sprites_group.add(self.play_sprite)  # добавим спрайт в группу
+
+        # стрелки
+        self.arrow_left_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.arrow_left_sprite.image = \
+            self.load_image(f"{self.arrow_left_sprite_name}",
+                            f"{self.arrow_left_sprite_directory}")  # определим его вид
+        self.arrow_left_sprite.rect = self.arrow_left_sprite.image.get_rect()  # и размеры
+        self.arrow_left_sprite.rect.x = self.arrow_left_sprite_x
+        self.arrow_left_sprite.rect.y = self.arrow_left_sprite_y
+        self.static_elements_sprites_group.add(self.arrow_left_sprite)  # добавим спрайт в группу
+
+        self.arrow_right_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.arrow_right_sprite.image = \
+            self.load_image(f"{self.arrow_right_sprite_name}",
+                            f"{self.arrow_right_sprite_directory}")  # определим его вид
+        self.arrow_right_sprite.rect = self.arrow_right_sprite.image.get_rect()  # и размеры
+        self.arrow_right_sprite.rect.x = self.arrow_right_sprite_x
+        self.arrow_right_sprite.rect.y = self.arrow_right_sprite_y
+        self.static_elements_sprites_group.add(self.arrow_right_sprite)  # добавим спрайт в группу
 
         self.start_game = False
         self.exit = False
         self.running = True
 
-        self.font = pygame.font.Font(None, 70)
+        self.font = pygame.font.Font(f"{self.font_directory}", 70)
 
-        self.main_menu_play_text_color = MAIN_MENU_SCORE_PLAY_TEXT_COLOR
-        self.main_menu_play_rect_color = MAIN_MENU_SCORE_PLAY_RECT_COLOR
-
-        self.main_menu_score_play_rect_x = MAIN_MENU_SCORE_PLAY_RECT_X
-        self.main_menu_score_play_rect_y = MAIN_MENU_SCORE_PLAY_RECT_Y
-
-        self.main_menu_play_rect_width = MAIN_MENU_SCORE_PLAY_RECT_WIDTH
-        self.main_menu_play_rect_height = MAIN_MENU_SCORE_PLAY_RECT_HEIGHT
-
-        self.main_menu_play_rect_x = MAIN_MENU_SCORE_PLAY_RECT_X
-        self.main_menu_play_rect_y = MAIN_MENU_SCORE_PLAY_RECT_Y
         # self.pictures_heroes_animation_small = pictures_heroes_animation_small
         # self.pictures_heroes_large = pictures_heroes_large
         #
         # self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
         # self.directory_heroes_large_name = directory_heroes_large_name
 
-        self.x, self.y = 0, 0
+        self.ischange_smiles_picture = False  # менять ли картинку
+        self.change_smiles_picture_side = 0  # в какую сторону менять лево -1, право +1
+
+        self.coins_count = COINS_COUNT
+        self.best_score = BEST_SCORE
+
+        self.isgame_start = False
+        print(self.best_score)
 
         if self.running:
             self.run()
@@ -80,18 +202,13 @@ class MainMenu:
     def run(self):
         while self.running:
             self.screen.fill('white')
-            # board.render(screen)
-            self.draw()
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                    self.pygame_quit()
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    # print(board.get_click(event.pos))  # вывод координат клетки ad
-                    self.check_coords(event.pos)
+            self.heroes_lock.draw(self.screen)
+            self.play_text_color = MAIN_MENU_PLAY_TEXT_COLOR
+            mouse_x, mouse_y = pygame.mouse.get_pos()
 
-                if event.type == pygame.MOUSEMOTION:
-                    aim_x, aim_y = event.pos  # проверка на нажатие
+            aim_x, aim_y = mouse_x, mouse_y
+
+            self.check_coords((mouse_x, mouse_y))
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
@@ -100,10 +217,26 @@ class MainMenu:
                 self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.screen2)
 
+            self.draw()
+            self.static_elements_sprites_group.draw(self.screen)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    # print(board.get_click(event.pos))  # вывод координат клетки ad
+                    self.check_coords(event.pos, True)
+
+
+
             self.clock.tick(self.fps)
             pygame.display.flip()
 
-        # self.pygame_quit()
+        if self.isgame_start:
+            self.game_start()
+            # self.running = False
+        else:
+            self.pygame_quit()
 
     def pygame_quit(self):
         pygame.quit()
@@ -111,17 +244,39 @@ class MainMenu:
     def pygame_init(self):
         pygame.init()
 
-    def check_coords(self, pos):
+    def check_coords(self, pos, button_down=False):
         click_x, click_y = pos
-        self.check_play_button(click_x, click_y)
+        self.check_play_button(click_x, click_y, button_down)
+        self.check_arrows(click_x, click_y, button_down)
 
-    def check_play_button(self, click_x, click_y):
-        width = self.main_menu_play_rect_width
-        height = self.main_menu_play_rect_height
-        x = self.main_menu_play_rect_x
-        y = self.main_menu_play_rect_y
+    def check_arrows(self, click_x, click_y, button_down):
+        self.check_left_arrow(click_x, click_y, button_down)
+        self.check_right_arrow(click_x, click_y, button_down)
+
+    def check_left_arrow(self, click_x, click_y, button_down):
+        width, height = self.arrow_left_sprite.image.get_size()
+        x, y = self.arrow_left_sprite_x, self.arrow_left_sprite_y
         if self.check_click(click_x, click_y, x, y, width, height):
-            self.game_start()
+            self.ischange_smiles_picture = True
+            self.change_smiles_picture_side = -1
+
+    def check_right_arrow(self, click_x, click_y, button_down):
+        width, height = self.arrow_right_sprite.image.get_size()
+        x, y = self.arrow_right_sprite_x, self.arrow_right_sprite_y
+        if self.check_click(click_x, click_y, x, y, width, height):
+            self.ischange_smiles_picture = True
+            self.change_smiles_picture_side = 1
+
+    def check_play_button(self, click_x, click_y, button_down):
+        width, height = self.play_sprite.image.get_size()
+        x, y = self.play_sprite_x, self.play_sprite_y
+        if self.check_click(click_x, click_y, x, y, width, height):
+            if button_down:  # buttondown
+                self.isgame_start = True
+                self.running = False
+            else:  # change color
+                self.play_text_color = "white"
+                self.draw_rect(x, y, width, height, "black")
 
     def check_click(self, click_x, click_y, x, y, width, height):
          if x <= click_x <= x + width and y <= click_y <= y + height:
@@ -130,29 +285,37 @@ class MainMenu:
             return False
 
     def game_start(self):
-        self.running = False
         Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
              DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()
-        print("start_game")
+        self.running = True
+        self.pygame_init()
 
     def draw(self):
-        self.draw_rect(MAIN_MENU_SCORE_PLAY_RECT_X, MAIN_MENU_SCORE_PLAY_RECT_Y,
-                       MAIN_MENU_SCORE_PLAY_RECT_WIDTH, MAIN_MENU_SCORE_PLAY_RECT_HEIGHT, self.main_menu_play_rect_color)
-        self.draw_text(f"Играть", MAIN_MENU_SCORE_PLAY_TEXT_X, MAIN_MENU_SCORE_PLAY_TEXT_Y, self.main_menu_play_text_color)
-        # self.draw_text(f"Лучший результат: {self.best_score}", MAIN_MENU_SCORE_TEXT_X, MAIN_MENU_SCORE_TEXT_Y)  # счет
+        # self.draw_rect(self.play_rect_x, self.play_rect_y,
+        #                self.play_rect_width, self.play_rect_height, self.play_rect_color)
+        self.draw_text(f"{str(self.best_score)}",
+                       self.best_score_text_center_x, self.best_score_text_center_y,
+                       self.best_score_and_coins_count_text_color, self.best_score_and_coins_count_text_size)
+        self.draw_text(f"{str(self.coins_count)}",
+                       self.coins_count_text_center_x, self.coins_count_text_center_y,
+                       self.best_score_and_coins_count_text_color, self.best_score_and_coins_count_text_size)
+        self.draw_text(f"ИГРАТЬ", self.play_text_center_x, self.play_text_center_y, self.play_text_color, self.play_text_size)
+        # self.draw_text(f"Рекорд: {self.best_score}", self.best_score_text_x, self.best_score_text_y, self.best_score_text_color)  # счет
 
-    def draw_text(self, to_write, x, y, color):
-        text = self.font.render(f"{to_write}", True, color)
-        text_x = x - text.get_width() // 2
-        text_y = y - text.get_height() // 2
-        self.screen.blit(text, (text_x, text_y))
+    def draw_text(self, to_write, center_x, center_y, color, size):
+        font = pygame.font.Font(f"{self.font_directory}", size)
+        text = font.render(f"{to_write}", True, color)
+        # text_x = x - text.get_width() // 2
+        # text_y = y - text.get_height() // 2
+        place = text.get_rect(center=(center_x, center_y))
+        self.screen.blit(text, place)
 
     def draw_line(self):
         pygame.draw.line(self.screen, "black", [INFO_BOARD_X, 0],
                          [INFO_BOARD_X, INFO_BOARD_Y], 6)
 
     def draw_rect(self, x, y, width, height, color, *radius):
-        pygame.draw.rect(self.screen, color, (x, y, width, height), 6)
+        pygame.draw.rect(self.screen, color, (x, y, width, height), 0)
 
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
@@ -162,6 +325,77 @@ class MainMenu:
             sys.exit()
         image = pygame.image.load(fullname)
         return image
+
+
+# class SelectionMenu:
+#     #
+    # def __init__(self):
+    #     self.pygame_init()
+    #     pygame.display.set_caption('игра')
+    #
+    #     # константы
+    #     self.size = SCREEN_SIZE
+    #     self.fps = FPS
+    #     self.aim_size = AIM_SIZE
+    #     self.aim_size_x = AIM_SIZE[0]
+    #     self.aim_size_y = AIM_SIZE[1]
+    #     self.aim_size_x_half = AIM_SIZE_HALF[0]
+    #     self.aim_size_y_half = AIM_SIZE_HALF[1]
+    #
+    #     # экраны
+    #     self.screen = pygame.display.set_mode(self.size)
+    #     self.screen2 = pygame.display.set_mode(self.size)
+    #     self.screen3 = pygame.display.set_mode(self.size)
+    #     self.screen4 = pygame.display.set_mode(self.size)
+    #
+    #     self.clock = pygame.time.Clock()
+    #
+    #     # группы спрайтов
+    #     self.aim_sprites_group = pygame.sprite.Group()
+    #     self.aim_sprite = pygame.sprite.Sprite()  # создадим спрайт
+    #     self.aim_sprite.image = self.load_image("aim2.png", "data")  # определим его вид
+    #     self.aim_sprite.rect = self.aim_sprite.image.get_rect()  # и размеры
+    #     self.aim_sprites_group.add(self.aim_sprite)  # добавим спрайт в группу
+    #
+    #     self.heroes_sprites_group = pygame.sprite.Group()
+    #
+    #     self.start_game = False
+    #     self.exit = False
+    #     self.running = True
+    #
+    #     self.font = pygame.font.Font(None, 70)
+    #
+    #     self.main_menu_play_text_color = MAIN_MENU_SCORE_PLAY_TEXT_COLOR
+    #     self.main_menu_play_rect_color = MAIN_MENU_SCORE_PLAY_RECT_COLOR
+    #
+    #     self.main_menu_score_play_rect_x = MAIN_MENU_SCORE_PLAY_RECT_X
+    #     self.main_menu_score_play_rect_y = MAIN_MENU_SCORE_PLAY_RECT_Y
+    #
+    #     self.main_menu_play_rect_width = MAIN_MENU_SCORE_PLAY_RECT_WIDTH
+    #     self.main_menu_play_rect_height = MAIN_MENU_SCORE_PLAY_RECT_HEIGHT
+    #
+    #     self.main_menu_play_rect_x = MAIN_MENU_SCORE_PLAY_RECT_X
+    #     self.main_menu_play_rect_y = MAIN_MENU_SCORE_PLAY_RECT_Y
+    #     # self.pictures_heroes_animation_small = pictures_heroes_animation_small
+    #     # self.pictures_heroes_large = pictures_heroes_large
+    #     #
+    #     # self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
+    #     # self.directory_heroes_large_name = directory_heroes_large_name
+    #
+    #     self.x, self.y = 0, 0
+    #
+    #     self.isgame_start = False
+    #     print(self.best_score)
+    #
+    #     if self.running:
+    #         self.run()
+    #     # self.delta_time = 1  # секунд
+    #     # self.level_time = 200  # секунд
+    #     #
+    #     # self.ismiss = True  # нужно ли уменьшать время
+    #
+    # def run(self):
+    #     pass
 
 
 class Game:
@@ -179,6 +413,9 @@ class Game:
         self.aim_size_x_half = AIM_SIZE_HALF[0]
         self.aim_size_y_half = AIM_SIZE_HALF[1]
 
+        self.level = LEVEL_START
+        self.best_score = best_score
+
         self.screen = pygame.display.set_mode(self.size)
         self.screen2 = pygame.display.set_mode(self.size)
         self.screen3 = pygame.display.set_mode(self.size)
@@ -188,7 +425,7 @@ class Game:
 
         self.aim_sprites_group = pygame.sprite.Group()
         self.aim_sprite = pygame.sprite.Sprite()  # создадим спрайт
-        self.aim_sprite.image = self.load_image("aim1.png", "data")  # определим его вид
+        self.aim_sprite.image = self.load_image("aim2.png", "data")  # определим его вид
         self.aim_sprite.rect = self.aim_sprite.image.get_rect()  # и размеры
         self.aim_sprites_group.add(self.aim_sprite)  # добавим спрайт в группу
 
@@ -207,21 +444,19 @@ class Game:
         self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
         self.directory_heroes_large_name = directory_heroes_large_name
 
-        self.x, self.y = 0, 0
-
         self.delta_time = 1  # секунд
         self.level_time = 200  # секунд
 
         self.ismiss = True  # нужно ли уменьшать время
+        # MainMenu()
 
     def run(self):
         self.update_level(self.level)
-
         i = 0
-        x, y = self.x, self.y
         # t = time.time()
 
         start_ticks = pygame.time.get_ticks()  # starter tick
+
         while self.running:
             self.screen.fill('white')
             # board.render(screen)
@@ -229,34 +464,42 @@ class Game:
 
             self.level_time = max(0, self.level_time)
 
-            seconds = round(self.level_time + (start_ticks - pygame.time.get_ticks()) / 1000)  # calculate how many seconds
+            seconds = round(self.level_time + (start_ticks - pygame.time.get_ticks()) / 1000)  # сколько секунд
             # print(seconds)
             seconds_res = time.gmtime(seconds)
             current_level_time = time.strftime("%S", seconds_res)
 
-            InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
+            mouse_x, mouse_y = pygame.mouse.get_pos()
 
-            if seconds <= 0:
-                self.running = False
-
-            self.ismiss = True  # нужно ли уменьшать время
-
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    self.running = False
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    # print(board.get_click(event.pos))  # вывод координат клеткиad
-                    self.heroes_sprites_group.update(event)
-
-                if event.type == pygame.MOUSEMOTION:
-                    x, y = event.pos  # проверка на нажатие
+            aim_x, aim_y = mouse_x, mouse_y
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
 
-                self.aim_sprite.rect.x = x - self.aim_size_x_half  # 25 - половина размера прицела
-                self.aim_sprite.rect.y = y - self.aim_size_y_half  # 25 - половина размера прицела
+                self.aim_sprite.rect.x = aim_x - self.aim_size_x_half  # 25 - половина размера прицела
+                self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.screen2)
+
+            InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
+            if self.score > self.best_score:
+                best_score = self.score
+                #  менять рекорд в бд
+
+            if seconds <= 0:
+                self.running = False
+                # MainMenu()
+            self.ismiss = True  # нужно ли уменьшать время
+
+            aim_x, aim_y = pygame.mouse.get_pos()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    # print(board.get_click(event.pos))  # вывод координат клеткиad
+                    self.heroes_sprites_group.update(event)
+
             # self.heroes_sprites_group.update()
             i += 1
             i %= 8
@@ -287,8 +530,11 @@ class Game:
 
             self.clock.tick(self.fps)
             pygame.display.flip()
+        MainMenu()
+        # /pygame.quit()
 
-        pygame.quit()
+    def game_start(self):
+        self.running = True
 
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
@@ -674,5 +920,5 @@ if __name__ == '__main__':
     # pygame.quit()
     level_start, best_score = 100, 1
     MainMenu()
-    # Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
-    #      DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()
+#     Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
+# DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()
