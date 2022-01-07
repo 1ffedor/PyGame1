@@ -5,6 +5,7 @@ import random as rnd
 from game_settings import *
 from pictures import *
 import time
+import sqlite3
 import datetime
 
 
@@ -186,8 +187,12 @@ class MainMenu:
         self.ischange_smiles_picture = False  # менять ли картинку
         self.change_smiles_picture_side = 0  # в какую сторону менять лево -1, право +1
 
-        self.coins_count = COINS_COUNT
-        self.best_score = BEST_SCORE
+        con = sqlite3.connect("statistics.db")
+        cur = con.cursor()
+        result = cur.execute("""SELECT * FROM statistics""").fetchall()
+        print(result)
+        self.coins_count = result[0][2]
+        self.best_score = result[0][0]
 
         self.isgame_start = False
         print(self.best_score)
@@ -413,6 +418,7 @@ class Game:
         self.aim_size_x_half = AIM_SIZE_HALF[0]
         self.aim_size_y_half = AIM_SIZE_HALF[1]
 
+
         self.level = LEVEL_START
         self.best_score = best_score
 
@@ -430,9 +436,6 @@ class Game:
         self.aim_sprites_group.add(self.aim_sprite)  # добавим спрайт в группу
 
         self.heroes_sprites_group = pygame.sprite.Group()
-
-        self.level = level_start
-        self.best_score = best_score
 
         self.isupdate_level = False
         self.running = True
@@ -481,13 +484,24 @@ class Game:
                 self.aim_sprites_group.draw(self.screen2)
 
             InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
-            if self.score > self.best_score:
-                best_score = self.score
-                #  менять рекорд в бд
+            if int(self.score) > int(self.best_score):
+                self.best_score = self.score
+                #print(self.best_score)
+
 
             if seconds <= 0:
+                con = sqlite3.connect("statistics.db")
+                cur = con.cursor()
+                result = cur.execute("""SELECT * FROM statistics""").fetchall()[0]
+                sql = """UPDATE statistics SET best_score = """ + str(max(int(self.best_score), int(result[0])))
+                cur.execute(sql)
+                sql = """UPDATE statistics SET coins = """ + str(int(result[2]) + int(self.best_score))
+                cur.execute(sql)
+                con.commit()
                 self.running = False
-                # MainMenu()
+
+                #MainMenu()
+
             self.ismiss = True  # нужно ли уменьшать время
 
             aim_x, aim_y = pygame.mouse.get_pos()
