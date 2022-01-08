@@ -169,7 +169,7 @@ class MainMenu:
         self.arrow_right_sprite.rect.y = self.arrow_right_sprite_y
         self.static_elements_sprites_group.add(self.arrow_right_sprite)  # добавим спрайт в группу
 
-        self.level_start = 1000
+        self.level_start = 1500
 
         self.start_game = False
         self.exit = False
@@ -338,7 +338,7 @@ class MainMenu:
             print(f"Файл с изображением '{fullname}' не найден")
             sys.exit()
         image = pygame.image.load(fullname)
-        return image
+        return image.convert_alpha()
 
 
 # class SelectionMenu:
@@ -601,7 +601,6 @@ class Game:
 
     # def draw_info_board(self):
 
-
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
         # если файл не существует, то выходим
@@ -609,7 +608,7 @@ class Game:
             print(f"Файл с изображением '{fullname}' не найден")
             sys.exit()
         image = pygame.image.load(fullname)
-        return image
+        return image.convert_alpha()
 
     def update_level(self, heroes_count):
         wanted = True
@@ -749,9 +748,10 @@ class Hero(pygame.sprite.Sprite):
             print(f"Файл с изображением '{fullname}' не найден")
             sys.exit()
         image = pygame.image.load(fullname)
-        return image
+        return image.convert_alpha()
 
     def update(self, *args):
+
         if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
             if self.wanted and not self.table_info:
                 self.update_level = True
@@ -907,7 +907,7 @@ class InfoBoard:
             print(f"Файл с изображением '{fullname}' не найден")
             sys.exit()
         image = pygame.image.load(fullname)
-        return image
+        return image.convert_alpha()
 
 # class Board:
 #     # создание поля
