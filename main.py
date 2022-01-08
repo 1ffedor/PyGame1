@@ -85,9 +85,6 @@ class MainMenu:
 
         self.font_directory = FONT_DIRECTORY
 
-        self.level = LEVEL_START
-        self.best_score = best_score
-
         # экраны
         self.screen = pygame.display.set_mode(self.size)
         self.screen2 = pygame.display.set_mode(self.size)
@@ -171,6 +168,8 @@ class MainMenu:
         self.arrow_right_sprite.rect.x = self.arrow_right_sprite_x
         self.arrow_right_sprite.rect.y = self.arrow_right_sprite_y
         self.static_elements_sprites_group.add(self.arrow_right_sprite)  # добавим спрайт в группу
+
+        self.level_start = 1000
 
         self.start_game = False
         self.exit = False
@@ -301,7 +300,7 @@ class MainMenu:
 
     def game_start(self):
         Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
-             DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()
+             DIRECTORY_HEROES_LARGE_NAME, self.level_start).run() # level_start, best_score
         self.running = True
         self.pygame_init()
 
@@ -416,7 +415,7 @@ class MainMenu:
 class Game:
 
     def __init__(self, pictures_heroes_animation_small, pictures_heroes_large, directory_heroes_animation_small_name,
-                 directory_heroes_large_name, level_start, best_score):
+                 directory_heroes_large_name, level_start):  # , level_start, best_score
         pygame.init()
         pygame.display.set_caption('игра')
 
@@ -428,9 +427,8 @@ class Game:
         self.aim_size_x_half = AIM_SIZE_HALF[0]
         self.aim_size_y_half = AIM_SIZE_HALF[1]
 
-
-        self.level = LEVEL_START
-        self.best_score = best_score
+        self.level_start = level_start
+        self.level = self.level_start
 
         self.screen = pygame.display.set_mode(self.size)
         self.screen2 = pygame.display.set_mode(self.size)
@@ -471,7 +469,8 @@ class Game:
         # t = time.time()
 
         start_ticks = pygame.time.get_ticks()  # starter tick
-
+        current_level_time = 59
+        info_board = InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
         while self.running:
             self.screen.fill('white')
             # board.render(screen)
@@ -499,7 +498,8 @@ class Game:
                 self.best_score = self.score
                 #print(self.best_score)
 
-            InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
+            info_board.draw()
+            # self.draw_info_board()
 
             if seconds <= 0:
                 # con = sqlite3.connect("statistics.db")
@@ -598,6 +598,9 @@ class Game:
         cur.execute(sql)
 
         con.commit()
+
+    # def draw_info_board(self):
+
 
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
@@ -734,7 +737,7 @@ class Hero(pygame.sprite.Sprite):
 
     def update_position(self):
         if self.table_info:
-            self.rect.x, self.rect.y = INFO_BOARD_X + (WIDTH - INFO_BOARD_Y) // 5, HEIGHT // 16
+            self.rect.x, self.rect.y = 950, 75
         else:
             self.rect.x = rnd.randrange(70, GAME_FIELD_WIDTH)
             self.rect.y = rnd.randrange(70, GAME_FILED_HEIGHT)
@@ -749,7 +752,6 @@ class Hero(pygame.sprite.Sprite):
         return image
 
     def update(self, *args):
-
         if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
             if self.wanted and not self.table_info:
                 self.update_level = True
@@ -836,33 +838,76 @@ class InfoBoard:
         self.score = score
         self.best_score = best_score
 
-        self.rect_color = INFO_BOARD_RECT_COLOR
+        self.line_x = INFO_BOARD_LINE_X
+        self.line_y = INFO_BOARD_LINE_Y
+        self.line_height = HEIGHT
+
+        self.main_sprite_directory = INFO_BOARD_MAIN_SPRITE_DIRECTORY
+        self.main_sprite_name = INFO_BOARD_MAIN_SPRITE_NAME
+        self.main_sprite_x = INFO_BOARD_MAIN_SPRITE_X
+        self.main_sprite_y = INFO_BOARD_MAIN_SPRITE_Y
+
+        self.time_text_center_x = INFO_BOARD_TIME_TEXT_CENTER_X
+        self.time_text_center_y = INFO_BOARD_TIME_TEXT_CENTER_Y
         self.time_text_color = INFO_BOARD_TIME_TEXT_COLOR
+
+        self.score_text_center_x = INFO_BOARD_SCORE_TEXT_CENTER_X
+        self.score_text_center_y = INFO_BOARD_SCORE_TEXT_CENTER_Y
         self.score_text_color = INFO_BOARD_SCORE_TEXT_COLOR
 
+        self.coins_count_text_center_x = INFO_BOARD_COINS_COUNT_TEXT_CENTER_X
+        self.coins_count_text_center_y = INFO_BOARD_COINS_COUNT_TEXT_CENTER_Y
+        self.coins_count_text_color = INFO_BOARD_COINS_COUNT_TEXT_COLOR
+
+        self.best_score_text_center_x = INFO_BOARD_BEST_SCORE_TEXT_CENTER_X
+        self.best_score_text_center_y = INFO_BOARD_BEST_SCORE_TEXT_CENTER_Y
+        self.best_score_text_color = INFO_BOARD_BEST_SCORE_TEXT_COLOR
+
+        self.table_info_main_sprites_group = pygame.sprite.Group()
+
+        self.main_sprite = pygame.sprite.Sprite()
+        self.main_sprite.image = self.load_image(f"{self.main_sprite_name}",
+                                                  f"{self.main_sprite_directory}")  # определим его вид
+        self.main_sprite.rect = self.main_sprite.image.get_rect()  # и размеры
+        self.main_sprite.rect.x = self.main_sprite_x
+        self.main_sprite.rect.y = self.main_sprite_y
+        self.table_info_main_sprites_group.add(self.main_sprite)  # доба
+
         self.current_level_time = current_level_time
-        self.font = pygame.font.Font(None, 70)
-        self.draw()
+
+        self.text_size = INFO_BOARD_TEXT_SIZE
+
+        self.font_directory = FONT_DIRECTORY
+        # self.draw()
         # print(score)
 
     def draw(self):
-        self.draw_line()
-        self.draw_rect(INFO_BOARD_RECT_X, INFO_BOARD_RECT_Y, INFO_BOARD_RECT_WIDTH, INFO_BOARD_RECT_HEIGHT, self.rect_color)
-        self.draw_text(f"Время: {self.current_level_time}", INFO_BOARD_TIME_TEXT_X, INFO_BOARD_TIME_TEXT_Y, self.time_text_color)  # таймер
-        self.draw_text(f"Счёт: {self.score}", INFO_BOARD_SCORE_TEXT_X, INFO_BOARD_SCORE_TEXT_Y, self.score_text_color)  # счет
+        self.table_info_main_sprites_group.draw(self.screen)
+        self.draw_line(self.line_x, self.line_y, self.line_height, "black")
+        self.draw_text(f"{self.best_score}", self.best_score_text_center_x, self.best_score_text_center_y, self.best_score_text_color, self.text_size)
 
-    def draw_line(self):
-        pygame.draw.line(self.screen, "black", [INFO_BOARD_X, 0],
-                         [INFO_BOARD_X, INFO_BOARD_Y], 6)
+    def draw_line(self, x, y, height, color):
+        pygame.draw.line(self.screen, color, [x, 0], [x, height], 7)
 
     def draw_rect(self, x, y, width, height, color, *radius):
         pygame.draw.rect(self.screen, color, (x, y, width, height), 6)
 
-    def draw_text(self, to_write, x, y, color):
-        text = self.font.render(f"{to_write}", True, "black")
-        text_x = x - text.get_width() // 2
-        text_y = y - text.get_height() // 2
-        self.screen.blit(text, (text_x, text_y))
+    def draw_text(self, to_write, center_x, center_y, color, size):
+        font = pygame.font.Font(f"{self.font_directory}", size)
+        text = font.render(f"{to_write}", True, color)
+        # text_x = x - text.get_width() // 2
+        # text_y = y - text.get_height() // 2
+        place = text.get_rect(center=(center_x, center_y))
+        self.screen.blit(text, place)
+
+    def load_image(self, name, directory_name, colorkey=None):
+        fullname = os.path.join(directory_name, name)
+        # если файл не существует, то выходим
+        if not os.path.isfile(fullname):
+            print(f"Файл с изображением '{fullname}' не найден")
+            sys.exit()
+        image = pygame.image.load(fullname)
+        return image
 
 # class Board:
 #     # создание поля
@@ -981,7 +1026,7 @@ if __name__ == '__main__':
     #     clock.tick(FPS)
     #     pygame.display.flip()
     # pygame.quit()
-    level_start, best_score = 100, 1
+    # level_start, best_score = 100, 1
     MainMenu()
 #     Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
 # DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()
