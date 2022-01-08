@@ -187,12 +187,7 @@ class MainMenu:
         self.ischange_smiles_picture = False  # менять ли картинку
         self.change_smiles_picture_side = 0  # в какую сторону менять лево -1, право +1
 
-        con = sqlite3.connect("statistics.db")
-        cur = con.cursor()
-        result = cur.execute("""SELECT * FROM statistics""").fetchall()
-        print(result)
-        self.coins_count = result[0][2]
-        self.best_score = result[0][0]
+        self.get_from_db()
 
         self.isgame_start = False
         print(self.best_score)
@@ -203,6 +198,21 @@ class MainMenu:
         # self.level_time = 200  # секунд
         #
         # self.ismiss = True  # нужно ли уменьшать время
+
+    def get_from_db(self):
+        directory = DB_DIRECTORY
+        name = DB_NAME
+        fullname = os.path.join(directory, name)
+
+        con = sqlite3.connect(fullname)
+        cur = con.cursor()
+
+        result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()
+
+        self.coins_count = result[0][2]
+        self.best_score = result[0][0]
+
+        con.commit()
 
     def run(self):
         while self.running:
@@ -441,6 +451,8 @@ class Game:
         self.running = True
         self.score = 0
 
+        self.get_from_db()
+
         self.pictures_heroes_animation_small = pictures_heroes_animation_small
         self.pictures_heroes_large = pictures_heroes_large
 
@@ -483,28 +495,28 @@ class Game:
                 self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.screen2)
 
-            InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
             if int(self.score) > int(self.best_score):
                 self.best_score = self.score
                 #print(self.best_score)
 
+            InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
 
             if seconds <= 0:
-                con = sqlite3.connect("statistics.db")
-                cur = con.cursor()
-                result = cur.execute("""SELECT * FROM statistics""").fetchall()[0]
-                sql = """UPDATE statistics SET best_score = """ + str(max(int(self.best_score), int(result[0])))
-                cur.execute(sql)
-                sql = """UPDATE statistics SET coins = """ + str(int(result[2]) + int(self.best_score))
-                cur.execute(sql)
-                con.commit()
+                # con = sqlite3.connect("statistics.db")
+                # cur = con.cursor()
+                # result = cur.execute("""SELECT * FROM statistics""").fetchall()[0]
+                # sql = """UPDATE statistics SET best_score = """ + str(max(int(self.score), int(result[0])))
+                # cur.execute(sql)
+                # sql = """UPDATE statistics SET coins = """ + str(int(result[2]) + int(self.score))
+                # cur.execute(sql)
+                # con.commit()
+                self.update_db()
                 self.running = False
 
                 #MainMenu()
 
             self.ismiss = True  # нужно ли уменьшать время
 
-            aim_x, aim_y = pygame.mouse.get_pos()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -533,6 +545,9 @@ class Game:
                     self.level = hero.current_level()
                     self.score += 1
                     self.level_time = 20
+
+                    self.coins_count += 1
+
                     start_ticks = pygame.time.get_ticks()
                     break
 
@@ -549,6 +564,40 @@ class Game:
 
     def game_start(self):
         self.running = True
+
+    def get_from_db(self):
+        directory = DB_DIRECTORY
+        name = DB_NAME
+        fullname = os.path.join(directory, name)
+
+        con = sqlite3.connect(fullname)
+        cur = con.cursor()
+
+        result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()
+
+        self.coins_count = result[0][2]
+        self.best_score = result[0][0]
+
+        con.commit()
+
+    def update_db(self):
+        directory = DB_DIRECTORY
+        name = DB_NAME
+        fullname = os.path.join(directory, name)
+
+        con = sqlite3.connect(fullname)
+        cur = con.cursor()
+
+        result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()[0]
+
+        # sql = """UPDATE statistics SET best_score = """ + str(max(int(self.score), int(result[0])))
+        sql = """UPDATE statistics SET best_score = """ + str(self.best_score)
+        cur.execute(sql)
+
+        sql = """UPDATE statistics SET coins = """ + str(self.coins_count)
+        cur.execute(sql)
+
+        con.commit()
 
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
