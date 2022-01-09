@@ -169,7 +169,7 @@ class MainMenu:
         self.arrow_right_sprite.rect.y = self.arrow_right_sprite_y
         self.static_elements_sprites_group.add(self.arrow_right_sprite)  # добавим спрайт в группу
 
-        self.level_start = 1500
+        self.level_start = 1
 
         self.start_game = False
         self.exit = False
@@ -189,7 +189,6 @@ class MainMenu:
         self.get_from_db()
 
         self.isgame_start = False
-        print(self.best_score)
 
         if self.running:
             self.run()
@@ -458,10 +457,12 @@ class Game:
         self.directory_heroes_large_name = directory_heroes_large_name
 
         self.delta_time = 1  # секунд
-        self.level_time = 200  # секунд
+        self.level_time = 20  # секунд
 
         self.ismiss = True  # нужно ли уменьшать время
         # MainMenu()
+
+        self.quit = False
 
     def run(self):
         self.update_level(self.level)
@@ -469,12 +470,14 @@ class Game:
         # t = time.time()
 
         start_ticks = pygame.time.get_ticks()  # starter tick
-        current_level_time = 59
-        info_board = InfoBoard(self.screen4, self.score, self.best_score, current_level_time)
+
+        info_board = InfoBoard(self.screen4, self.score, self.best_score, self.level_time)
         while self.running:
             self.screen.fill('white')
             # board.render(screen)
             self.heroes_sprites_group.draw(self.screen3)
+
+            self.ismiss = True  # нужно ли уменьшать время
 
             self.level_time = max(0, self.level_time)
 
@@ -498,9 +501,9 @@ class Game:
                 self.best_score = self.score
                 #print(self.best_score)
 
-            info_board.draw()
+            info_board.draw(current_level_time, self.score, self.coins_count, self.best_score)
             # self.draw_info_board()
-
+            print(seconds)
             if seconds <= 0:
                 # con = sqlite3.connect("statistics.db")
                 # cur = con.cursor()
@@ -515,12 +518,11 @@ class Game:
 
                 #MainMenu()
 
-            self.ismiss = True  # нужно ли уменьшать время
-
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.update_db()
                     self.running = False
+                    self.quit = True
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # print(board.get_click(event.pos))  # вывод координат клеткиad
@@ -532,7 +534,7 @@ class Game:
             for hero in self.heroes_sprites_group:
                 if i == 7:
                     hero.update_image()
-                if hero.ismiss() and self.ismiss:
+                if hero.ismiss() and self.ismiss:  # при промахе
                     self.level_time -= 5
                     self.level_time = max(1, self.level_time)
                     self.ismiss = False  # уменьшили время, уже не нужно
@@ -545,7 +547,6 @@ class Game:
                     self.level = hero.current_level()
                     self.score += 1
                     self.level_time = 20
-
                     self.coins_count += 1
 
                     start_ticks = pygame.time.get_ticks()
@@ -559,11 +560,15 @@ class Game:
 
             self.clock.tick(self.fps)
             pygame.display.flip()
-        MainMenu()
+        if not self.quit:
+            MainMenu()
         # /pygame.quit()
 
     def game_start(self):
         self.running = True
+
+    def game_quit(self):
+        pygame.quit()
 
     def get_from_db(self):
         directory = DB_DIRECTORY
@@ -849,11 +854,11 @@ class InfoBoard:
 
         self.time_text_center_x = INFO_BOARD_TIME_TEXT_CENTER_X
         self.time_text_center_y = INFO_BOARD_TIME_TEXT_CENTER_Y
-        self.time_text_color = INFO_BOARD_TIME_TEXT_COLOR
+        self.time_text_color = INFO_BOARD_TIME_TEXT_DEFAULT_COLOR
 
         self.score_text_center_x = INFO_BOARD_SCORE_TEXT_CENTER_X
         self.score_text_center_y = INFO_BOARD_SCORE_TEXT_CENTER_Y
-        self.score_text_color = INFO_BOARD_SCORE_TEXT_COLOR
+        self.score_text_color = INFO_BOARD_SCORE_TEXT_DEFAULT_COLOR
 
         self.coins_count_text_center_x = INFO_BOARD_COINS_COUNT_TEXT_CENTER_X
         self.coins_count_text_center_y = INFO_BOARD_COINS_COUNT_TEXT_CENTER_Y
@@ -881,10 +886,53 @@ class InfoBoard:
         # self.draw()
         # print(score)
 
-    def draw(self):
+    def draw(self, time, score, coins_count, best_score):
         self.table_info_main_sprites_group.draw(self.screen)
+
         self.draw_line(self.line_x, self.line_y, self.line_height, "black")
-        self.draw_text(f"{self.best_score}", self.best_score_text_center_x, self.best_score_text_center_y, self.best_score_text_color, self.text_size)
+
+        self.change_time_text_color(time)
+        self.change_score_text_color(score, best_score)
+        random_size = False
+        if int(time) <= 5:
+            random_size = True
+        self.draw_text(f"00:{time}", self.time_text_center_x, self.time_text_center_y, self.time_text_color, self.text_size, random_size, int(time))
+        self.draw_text(f"{score}", self.score_text_center_x, self.score_text_center_y, self.score_text_color, self.text_size)
+        self.draw_text(f"{best_score}", self.best_score_text_center_x, self.best_score_text_center_y, self.best_score_text_color, self.text_size)
+        self.draw_text(f"{coins_count}", self.coins_count_text_center_x, self.coins_count_text_center_y, self.coins_count_text_color,
+                       self.text_size)
+
+    def change_time_text_color(self, time):
+        default_r, default_g, default_b = INFO_BOARD_TIME_TEXT_DEFAULT_COLOR
+        final_r, final_g, final_b = INFO_BOARD_TIME_TEXT_FINAL_COLOR
+
+        min_r, min_g, min_b = min(default_r, final_r), min(default_g, final_g), min(default_b, final_b)
+        max_r, max_g, max_b = max(default_r, final_r), max(default_g, final_g), max(default_b, final_b)
+
+        start_time = INFO_BOARD_TIME_TEXT_START_TIME
+        min_time = INFO_BOARD_TIME_TEXT_MIN_TIME
+
+        msc = int(time) * 100
+        # r = int(71 + (184 / 1500) * (2000 - msc))
+        # g = int(255 - (184 / 1500) * (2000 - msc))
+        r = max(min_r, min(max_r, int(min_r + ((max_r - min_r) / ((start_time - min_time) * 100)) * (start_time * 100 - msc))))
+        g = max(min_g, min(max_g, int(max_g - ((max_g - min_g) / ((start_time - min_time) * 100)) * (start_time * 100 - msc))))
+        #g = max_g - int(((max_g - min_g) / (start_time - min_time) * 100) * (start_time * 100 - msc))
+        b = max_b
+        self.time_text_color = (r, g, b)
+
+    def change_score_text_color(self, score, best_score):
+        #print(score, best_score)
+        default_r, default_g, default_b = INFO_BOARD_SCORE_TEXT_DEFAULT_COLOR
+        final_r, final_g, final_b = INFO_BOARD_SCORE_TEXT_FINAL_COLOR
+
+        min_r, min_g, min_b = min(default_r, final_r), min(default_g, final_g), min(default_b, final_b)
+        max_r, max_g, max_b = max(default_r, final_r), max(default_g, final_g), max(default_b, final_b)
+
+        r = max(min_r, min(max_r, int(max_r - (max_r - min_r) / best_score * score)))
+        g = max_g
+        b = max(min_b, min(max_b, int(min_b + (max_b - min_b) / best_score * score)))
+        self.score_text_color = r, g, b
 
     def draw_line(self, x, y, height, color):
         pygame.draw.line(self.screen, color, [x, 0], [x, height], 7)
@@ -892,11 +940,16 @@ class InfoBoard:
     def draw_rect(self, x, y, width, height, color, *radius):
         pygame.draw.rect(self.screen, color, (x, y, width, height), 6)
 
-    def draw_text(self, to_write, center_x, center_y, color, size):
+    def draw_text(self, to_write, center_x, center_y, color, size, random_size=False, *args):
         font = pygame.font.Font(f"{self.font_directory}", size)
         text = font.render(f"{to_write}", True, color)
         # text_x = x - text.get_width() // 2
         # text_y = y - text.get_height() // 2
+        if random_size:
+            if args:
+                delta = (-2.5 / 6) * int(args[0]) + 2.5
+            center_x += rnd.uniform(-delta, delta)
+            center_y += rnd.uniform(-delta, delta)
         place = text.get_rect(center=(center_x, center_y))
         self.screen.blit(text, place)
 
