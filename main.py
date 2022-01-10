@@ -17,7 +17,7 @@ class MainMenu:
 
     def __init__(self, ):
         self.pygame_init()
-        pygame.display.set_caption('игра')
+        pygame.display.set_caption('Catch a Smile (v.0.1)')
 
         # константы
         self.size = SCREEN_SIZE
@@ -86,10 +86,10 @@ class MainMenu:
         self.font_directory = FONT_DIRECTORY
 
         # экраны
-        self.screen = pygame.display.set_mode(self.size)
-        self.screen2 = pygame.display.set_mode(self.size)
-        self.screen3 = pygame.display.set_mode(self.size)
-        self.screen4 = pygame.display.set_mode(self.size)
+        self.background_screen = pygame.display.set_mode(self.size)
+        self.static_elements_screen = pygame.display.set_mode(self.size)
+        self.heroes_lock_screen = pygame.display.set_mode(self.size)
+        self.aim_screen = pygame.display.set_mode(self.size)
 
         self.clock = pygame.time.Clock()
 
@@ -175,8 +175,6 @@ class MainMenu:
         self.exit = False
         self.running = True
 
-        self.font = pygame.font.Font(f"{self.font_directory}", 70)
-
         # self.pictures_heroes_animation_small = pictures_heroes_animation_small
         # self.pictures_heroes_large = pictures_heroes_large
         #
@@ -214,24 +212,24 @@ class MainMenu:
 
     def run(self):
         while self.running:
-            self.screen.fill('white')
-            self.heroes_lock.draw(self.screen)
+            self.background_screen.fill('white')
             self.play_text_color = MAIN_MENU_PLAY_TEXT_COLOR
+
             mouse_x, mouse_y = pygame.mouse.get_pos()
-
             aim_x, aim_y = mouse_x, mouse_y
-
             self.check_coords((mouse_x, mouse_y))
+
+            self.heroes_lock.draw(self.heroes_lock_screen)
+            self.static_elements_sprites_group.draw(self.static_elements_screen)
+            self.draw()
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
 
                 self.aim_sprite.rect.x = aim_x - self.aim_size_x_half  # 25 - половина размера прицела
                 self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
-                self.aim_sprites_group.draw(self.screen2)
+                self.aim_sprites_group.draw(self.aim_screen)
 
-            self.draw()
-            self.static_elements_sprites_group.draw(self.screen)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
@@ -239,8 +237,6 @@ class MainMenu:
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # print(board.get_click(event.pos))  # вывод координат клетки ad
                     self.check_coords(event.pos, True)
-
-
 
             self.clock.tick(self.fps)
             pygame.display.flip()
@@ -321,14 +317,10 @@ class MainMenu:
         # text_x = x - text.get_width() // 2
         # text_y = y - text.get_height() // 2
         place = text.get_rect(center=(center_x, center_y))
-        self.screen.blit(text, place)
-
-    def draw_line(self):
-        pygame.draw.line(self.screen, "black", [INFO_BOARD_X, 0],
-                         [INFO_BOARD_X, INFO_BOARD_Y], 6)
+        self.static_elements_screen.blit(text, place)
 
     def draw_rect(self, x, y, width, height, color, *radius):
-        pygame.draw.rect(self.screen, color, (x, y, width, height), 0)
+        pygame.draw.rect(self.background_screen, color, (x, y, width, height), 0)
 
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
@@ -420,19 +412,34 @@ class Game:
 
         self.size = SCREEN_SIZE
         self.fps = FPS
+        self.v = 0
+
         self.aim_size = AIM_SIZE
         self.aim_size_x = AIM_SIZE[0]
         self.aim_size_y = AIM_SIZE[1]
         self.aim_size_x_half = AIM_SIZE_HALF[0]
         self.aim_size_y_half = AIM_SIZE_HALF[1]
 
-        self.level_start = level_start
-        self.level = self.level_start
+        self.level = level_start
+        self.min_level = GAME_HEROES_MIN_V
+        self.max_level = GAME_HEROES_MAX_LEVEL
 
-        self.screen = pygame.display.set_mode(self.size)
-        self.screen2 = pygame.display.set_mode(self.size)
-        self.screen3 = pygame.display.set_mode(self.size)
-        self.screen4 = pygame.display.set_mode(self.size)
+        # self.screen = pygame.display.set_mode(self.size)
+        # self.screen2 = pygame.display.set_mode(self.size)
+        # self.screen3 = pygame.display.set_mode(self.size)
+        # self.screen4 = pygame.display.set_mode(self.size)
+
+        self.background_screen = pygame.display.set_mode(self.size)
+        self.static_elements_screen = pygame.display.set_mode(self.size)
+        self.heroes_sprites_screen = pygame.display.set_mode(self.size)
+        self.aim_screen = pygame.display.set_mode(self.size)
+        self.black_rect_screen = pygame.display.set_mode(self.size)
+
+        self.black_rect_level = GAME_BLACK_RECT_LEVEL
+        self.cover_surf = pygame.Surface((850, 850))
+        self.cover_surf.set_colorkey((255, 255, 255))
+
+        self.white_circle_radius = 400
 
         self.clock = pygame.time.Clock()
 
@@ -456,7 +463,7 @@ class Game:
         self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
         self.directory_heroes_large_name = directory_heroes_large_name
 
-        self.delta_time = 1  # секунд
+        self.delta_time = 5  # на сколько секунд увеличится время при попадании
         self.level_time = 20  # секунд
 
         self.ismiss = True  # нужно ли уменьшать время
@@ -466,57 +473,45 @@ class Game:
 
     def run(self):
         self.update_level(self.level)
-        i = 0
-        # t = time.time()
-
+        i = 0  # счетчик обновления смайла
         start_ticks = pygame.time.get_ticks()  # starter tick
 
-        info_board = InfoBoard(self.screen4, self.score, self.best_score, self.level_time)
+        info_board = InfoBoard(self.static_elements_screen, self.score, self.best_score, self.level_time)
         while self.running:
-            self.screen.fill('white')
-            # board.render(screen)
-            self.heroes_sprites_group.draw(self.screen3)
+            self.background_screen.fill('white')
 
             self.ismiss = True  # нужно ли уменьшать время
+            self.level_time = max(1, self.level_time)
 
-            self.level_time = max(0, self.level_time)
-
-            seconds = round(self.level_time + (start_ticks - pygame.time.get_ticks()) / 1000)  # сколько секунд
-            # print(seconds)
+            seconds = round(self.level_time - (pygame.time.get_ticks() - start_ticks) / 1000)
             seconds_res = time.gmtime(seconds)
             current_level_time = time.strftime("%S", seconds_res)
 
             mouse_x, mouse_y = pygame.mouse.get_pos()
-
             aim_x, aim_y = mouse_x, mouse_y
+            if self.score > self.black_rect_level:
+                k = 4000
+                self.white_circle_radius = min(400, max(70, k / max(1, self.score)))
+                self.cover_surf.fill((0, 0, 0))
+                pygame.draw.circle(self.cover_surf, (255, 255, 255), (aim_x, aim_y), self.white_circle_radius)
+                # self.cover_surf.set_alpha(300)
+
+            self.heroes_sprites_group.draw(self.heroes_sprites_screen)
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
-
                 self.aim_sprite.rect.x = aim_x - self.aim_size_x_half  # 25 - половина размера прицела
                 self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
-                self.aim_sprites_group.draw(self.screen2)
+                self.aim_sprites_group.draw(self.aim_screen)
 
             if int(self.score) > int(self.best_score):
                 self.best_score = self.score
-                #print(self.best_score)
 
             info_board.draw(current_level_time, self.score, self.coins_count, self.best_score)
-            # self.draw_info_board()
-            print(seconds)
+
             if seconds <= 0:
-                # con = sqlite3.connect("statistics.db")
-                # cur = con.cursor()
-                # result = cur.execute("""SELECT * FROM statistics""").fetchall()[0]
-                # sql = """UPDATE statistics SET best_score = """ + str(max(int(self.score), int(result[0])))
-                # cur.execute(sql)
-                # sql = """UPDATE statistics SET coins = """ + str(int(result[2]) + int(self.score))
-                # cur.execute(sql)
-                # con.commit()
                 self.update_db()
                 self.running = False
-
-                #MainMenu()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -525,18 +520,16 @@ class Game:
                     self.quit = True
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    # print(board.get_click(event.pos))  # вывод координат клеткиad
+                    # print(board.get_click(event.pos))  # вывод координат клетки
                     self.heroes_sprites_group.update(event)
-
-            # self.heroes_sprites_group.update()
+            # счетчик обновления картинок анимации
             i += 1
-            i %= 8
+            i %= 5
             for hero in self.heroes_sprites_group:
-                if i == 7:
+                if i == 4:
                     hero.update_image()
                 if hero.ismiss() and self.ismiss:  # при промахе
                     self.level_time -= 5
-                    self.level_time = max(1, self.level_time)
                     self.ismiss = False  # уменьшили время, уже не нужно
 
                 if not hero.isupdate_level():
@@ -544,22 +537,29 @@ class Game:
                     hero.move()
                 else:
                     self.isupdate_level = True
-                    self.level = hero.current_level()
                     self.score += 1
-                    self.level_time = 20
-                    self.coins_count += 1
+                    self.create_level()
+                    self.create_v()
 
+                    self.level_time += self.delta_time
+                    self.coins_count += 1
                     start_ticks = pygame.time.get_ticks()
                     break
+            self.level_time = min(59, max(1, self.level_time))
 
+            # удалить спрайты смайлов и обновить уровень
             if self.isupdate_level:
-                for hero in self.heroes_sprites_group:
-                    hero.remove(self.heroes_sprites_group)
+                self.remove_heroes(self.heroes_sprites_group)
                 self.update_level(self.level)
                 self.isupdate_level = False
 
+            # условие появления черного экрана
+            if self.score > self.black_rect_level:
+                self.black_rect_screen.blit(self.cover_surf, (0, 0))
+
             self.clock.tick(self.fps)
             pygame.display.flip()
+
         if not self.quit:
             MainMenu()
         # /pygame.quit()
@@ -570,38 +570,37 @@ class Game:
     def game_quit(self):
         pygame.quit()
 
+    def create_level(self):
+        #  сначала парабола до 14 потом прямая
+        self.level = min(self.max_level, min(196, self.score ** 2 + 1) + 10 * max(0, (self.score - 14)))
+
+    def create_v(self):
+        # self.v = self.level / 2
+        self.v = max(GAME_HEROES_MIN_V, min(GAME_HEROES_MAX_V, min(200, GAME_HEROES_MIN_V + 70 * self.score ** 0.5))) // FPS
+
     def get_from_db(self):
         directory = DB_DIRECTORY
         name = DB_NAME
         fullname = os.path.join(directory, name)
-
         con = sqlite3.connect(fullname)
         cur = con.cursor()
-
         result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()
-
         self.coins_count = result[0][2]
         self.best_score = result[0][0]
-
         con.commit()
 
     def update_db(self):
         directory = DB_DIRECTORY
         name = DB_NAME
         fullname = os.path.join(directory, name)
-
         con = sqlite3.connect(fullname)
         cur = con.cursor()
-
         result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()[0]
-
         # sql = """UPDATE statistics SET best_score = """ + str(max(int(self.score), int(result[0])))
         sql = """UPDATE statistics SET best_score = """ + str(self.best_score)
         cur.execute(sql)
-
         sql = """UPDATE statistics SET coins = """ + str(self.coins_count)
         cur.execute(sql)
-
         con.commit()
 
     # def draw_info_board(self):
@@ -615,13 +614,17 @@ class Game:
         image = pygame.image.load(fullname)
         return image.convert_alpha()
 
+    def remove_heroes(self, sprites_group):
+        for hero in sprites_group:
+            hero.remove(sprites_group)
+
     def update_level(self, heroes_count):
         wanted = True
         table_info = True
         image_wanted, image_wanted_large, images_not_wanted = self.choose_picture()
-        Hero(self.heroes_sprites_group, wanted, self.level, image_wanted, image_wanted_large, images_not_wanted, table_info)
+        Hero(self.heroes_sprites_group, wanted, self.level, self.v, image_wanted, image_wanted_large, images_not_wanted, table_info)
         for i in range(heroes_count):
-            Hero(self.heroes_sprites_group, wanted, self.level, image_wanted, image_wanted_large, images_not_wanted)
+            Hero(self.heroes_sprites_group, wanted, self.level, self.v, image_wanted, image_wanted_large, images_not_wanted)
             wanted = False
             table_info = False
 
@@ -667,7 +670,7 @@ class Hero(pygame.sprite.Sprite):
     # image_not_wanted = Game.load_image(color_hero_not_wanted, "data\smiles_1")
     # image_wanted = Game.load_image(color_hero_wanted, "data\smiles_1")
 
-    def __init__(self, heroes_sprites_group, wanted, level, image_wanted, image_wanted_large, images_not_wanted, table_info=False):
+    def __init__(self, heroes_sprites_group, wanted, level, v, image_wanted, image_wanted_large, images_not_wanted, table_info=False):
         # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
         # Это очень важно !!!
         super().__init__(heroes_sprites_group)
@@ -677,14 +680,13 @@ class Hero(pygame.sprite.Sprite):
 
         self.heroes_sprites_group = heroes_sprites_group
 
-        self.score = 0
         self.update_level = False
         self.miss = False
 
         self.level = level
         self.table_info = table_info
         self.wanted = wanted
-        self.v = V // FPS
+        self.v = v
 
         if table_info:
             self.image = image_wanted_large
@@ -768,9 +770,9 @@ class Hero(pygame.sprite.Sprite):
                 # for hero in self.heroes_sprites_group:
                 #     # hero.change_v(2)
                 #     #hero.change_color()
-                #     hero.update_position()
-                self.score += 1
-                self.level += 10
+                # #     hero.update_position()
+                # self.score += 1
+                # self.level = self.score ** 2 + 1
         else:
             self.miss = True
 
@@ -813,7 +815,7 @@ class Hero(pygame.sprite.Sprite):
 
     def create_v(self):
         # print(v)
-        self.vx = int([rnd.randrange(-self.v, -self.v // 3), rnd.randrange(self.v // 3, self.v)][rnd.randrange(1)] + rnd.uniform(-rnd.random(), rnd.random()))
+        self.vx = int([rnd.randint(-self.v, -self.v // 2), rnd.randint(self.v // 2, self.v)][rnd.randrange(1)] + rnd.uniform(-rnd.random(), rnd.random()))
         # self.vx = int(rnd.randrange(-self.v, self.v) + rnd.uniform(-rnd.random(), rnd.random()))
         self.vy = (self.v ** 2 - self.vx ** 2) ** 0.5
         if rnd.random() > 0.5:
@@ -839,9 +841,15 @@ class Hero(pygame.sprite.Sprite):
 class InfoBoard:
 
     def __init__(self, screen, score, best_score, current_level_time):
-        self.screen = screen
+        # self.screen = screen
+        self.size = SCREEN_SIZE
+        self.fps = FPS
+
         self.score = score
         self.best_score = best_score
+
+        # экраны
+        self.static_elements_screen = screen
 
         self.line_x = INFO_BOARD_LINE_X
         self.line_y = INFO_BOARD_LINE_Y
@@ -887,7 +895,7 @@ class InfoBoard:
         # print(score)
 
     def draw(self, time, score, coins_count, best_score):
-        self.table_info_main_sprites_group.draw(self.screen)
+        self.table_info_main_sprites_group.draw(self.static_elements_screen)
 
         self.draw_line(self.line_x, self.line_y, self.line_height, "black")
 
@@ -935,10 +943,10 @@ class InfoBoard:
         self.score_text_color = r, g, b
 
     def draw_line(self, x, y, height, color):
-        pygame.draw.line(self.screen, color, [x, 0], [x, height], 7)
+        pygame.draw.line(self.static_elements_screen, color, [x, 0], [x, height], 7)
 
     def draw_rect(self, x, y, width, height, color, *radius):
-        pygame.draw.rect(self.screen, color, (x, y, width, height), 6)
+        pygame.draw.rect(self.static_elements_screen, color, (x, y, width, height), 6)
 
     def draw_text(self, to_write, center_x, center_y, color, size, random_size=False, *args):
         font = pygame.font.Font(f"{self.font_directory}", size)
@@ -951,7 +959,7 @@ class InfoBoard:
             center_x += rnd.uniform(-delta, delta)
             center_y += rnd.uniform(-delta, delta)
         place = text.get_rect(center=(center_x, center_y))
-        self.screen.blit(text, place)
+        self.static_elements_screen.blit(text, place)
 
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
