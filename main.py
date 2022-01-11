@@ -7,6 +7,7 @@ from pictures import *
 import time
 import sqlite3
 import datetime
+from math import sqrt
 
 
 COLOR_NOT_WANTED = ""
@@ -295,9 +296,9 @@ class MainMenu:
 
     def game_start(self):
         Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
-             DIRECTORY_HEROES_LARGE_NAME, self.level_start).run() # level_start, best_score
-        self.running = True
-        self.pygame_init()
+             DIRECTORY_HEROES_LARGE_NAME).run() # level_start, best_score
+        # self.running = True
+        # self.pygame_init()
 
     def draw(self):
         # self.draw_rect(self.play_rect_x, self.play_rect_y,
@@ -332,81 +333,215 @@ class MainMenu:
         return image.convert_alpha()
 
 
-# class SelectionMenu:
-#     #
-    # def __init__(self):
-    #     self.pygame_init()
-    #     pygame.display.set_caption('игра')
-    #
-    #     # константы
-    #     self.size = SCREEN_SIZE
-    #     self.fps = FPS
-    #     self.aim_size = AIM_SIZE
-    #     self.aim_size_x = AIM_SIZE[0]
-    #     self.aim_size_y = AIM_SIZE[1]
-    #     self.aim_size_x_half = AIM_SIZE_HALF[0]
-    #     self.aim_size_y_half = AIM_SIZE_HALF[1]
-    #
-    #     # экраны
-    #     self.screen = pygame.display.set_mode(self.size)
-    #     self.screen2 = pygame.display.set_mode(self.size)
-    #     self.screen3 = pygame.display.set_mode(self.size)
-    #     self.screen4 = pygame.display.set_mode(self.size)
-    #
-    #     self.clock = pygame.time.Clock()
-    #
-    #     # группы спрайтов
-    #     self.aim_sprites_group = pygame.sprite.Group()
-    #     self.aim_sprite = pygame.sprite.Sprite()  # создадим спрайт
-    #     self.aim_sprite.image = self.load_image("aim2.png", "data")  # определим его вид
-    #     self.aim_sprite.rect = self.aim_sprite.image.get_rect()  # и размеры
-    #     self.aim_sprites_group.add(self.aim_sprite)  # добавим спрайт в группу
-    #
-    #     self.heroes_sprites_group = pygame.sprite.Group()
-    #
-    #     self.start_game = False
-    #     self.exit = False
-    #     self.running = True
-    #
-    #     self.font = pygame.font.Font(None, 70)
-    #
-    #     self.main_menu_play_text_color = MAIN_MENU_SCORE_PLAY_TEXT_COLOR
-    #     self.main_menu_play_rect_color = MAIN_MENU_SCORE_PLAY_RECT_COLOR
-    #
-    #     self.main_menu_score_play_rect_x = MAIN_MENU_SCORE_PLAY_RECT_X
-    #     self.main_menu_score_play_rect_y = MAIN_MENU_SCORE_PLAY_RECT_Y
-    #
-    #     self.main_menu_play_rect_width = MAIN_MENU_SCORE_PLAY_RECT_WIDTH
-    #     self.main_menu_play_rect_height = MAIN_MENU_SCORE_PLAY_RECT_HEIGHT
-    #
-    #     self.main_menu_play_rect_x = MAIN_MENU_SCORE_PLAY_RECT_X
-    #     self.main_menu_play_rect_y = MAIN_MENU_SCORE_PLAY_RECT_Y
-    #     # self.pictures_heroes_animation_small = pictures_heroes_animation_small
-    #     # self.pictures_heroes_large = pictures_heroes_large
-    #     #
-    #     # self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
-    #     # self.directory_heroes_large_name = directory_heroes_large_name
-    #
-    #     self.x, self.y = 0, 0
-    #
-    #     self.isgame_start = False
-    #     print(self.best_score)
-    #
-    #     if self.running:
-    #         self.run()
-    #     # self.delta_time = 1  # секунд
-    #     # self.level_time = 200  # секунд
-    #     #
-    #     # self.ismiss = True  # нужно ли уменьшать время
-    #
-    # def run(self):
-    #     pass
+class SelectionMenu:
+
+    def __init__(self, ):
+        self.pygame_init()
+
+        # константы
+        self.size = SCREEN_SIZE
+        self.fps = FPS
+
+        self.aim_size = AIM_SIZE
+        self.aim_size_x = AIM_SIZE[0]
+        self.aim_size_y = AIM_SIZE[1]
+        self.aim_size_x_half = AIM_SIZE_HALF[0]
+        self.aim_size_y_half = AIM_SIZE_HALF[1]
+
+        self.main_sprite_directory = SELECTION_MENU_MAIN_SPRITE_DIRECTORY
+        self.main_sprite_name = SELECTION_MENU_MAIN_SPRITE_NAME
+        self.main_sprite_x = SELECTION_MENU_MAIN_SPRITE_X
+        self.main_sprite_y = SELECTION_MENU_MAIN_SPRITE_Y
+
+
+        self.main_menu_button_x = SELECTION_MENU_MAIN_MENU_BUTTON_X
+        self.main_menu_button_y = SELECTION_MENU_MAIN_MENU_BUTTON_Y
+        self.main_menu_button_width = SELECTION_MENU_MAIN_MENU_BUTTON_WIDTH
+        self.main_menu_button_height = SELECTION_MENU_MAIN_MENU_BUTTON_HEIGHT
+
+        self.main_menu_text_center_x = SELECTION_MENU_MAIN_MENU_TEXT_CENTER_X
+        self.main_menu_text_center_y = SELECTION_MENU_MAIN_MENU_TEXT_CENTER_Y
+        self.main_menu_text_color = SELECTION_MENU_MAIN_MENU_TEXT_COLOR
+
+        self.restart_button_x = SELECTION_MENU_RESTART_BUTTON_X
+        self.restart_button_y = SELECTION_MENU_RESTART_BUTTON_Y
+        self.restart_button_width = SELECTION_MENU_RESTART_BUTTON_WIDTH
+        self.restart_button_height = SELECTION_MENU_RESTART_BUTTON_HEIGHT
+
+        self.restart_text_center_x = SELECTION_MENU_RESTART_TEXT_CENTER_X
+        self.restart_text_center_y = SELECTION_MENU_RESTART_TEXT_CENTER_Y
+        self.restart_text_color = SELECTION_MENU_RESTART_TEXT_COLOR
+
+        self.main_menu_and_restart_text_size = SELECTION_MENU_MAIN_MENU_AND_RESTART_TEXT_SIZE
+
+        self.font_directory = FONT_DIRECTORY
+
+        # экраны
+        self.background_screen = pygame.display.set_mode(self.size)
+        self.static_elements_screen = pygame.display.set_mode(self.size)
+        self.aim_screen = pygame.display.set_mode(self.size)
+
+        self.clock = pygame.time.Clock()
+
+        # группы спрайтов
+        self.aim_sprites_group = pygame.sprite.Group()
+        self.aim_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.aim_sprite.image = self.load_image("aim2.png", "data")  # определим его вид
+        self.aim_sprite.rect = self.aim_sprite.image.get_rect()  # и размеры
+        self.aim_sprites_group.add(self.aim_sprite)  # добавим спрайт в группу
+
+        self.static_elements_sprites_group = pygame.sprite.Group()
+
+        # создаем спрайты
+        self.main_sprite = pygame.sprite.Sprite()
+        self.main_sprite.image = self.load_image(f"{self.main_sprite_name}", f"{self.main_sprite_directory}")  # определим его вид
+        self.main_sprite.rect = self.main_sprite.image.get_rect()  # и размеры
+        self.main_sprite.rect.x = self.main_sprite_x
+        self.main_sprite.rect.y = self.main_sprite_y
+        self.static_elements_sprites_group.add(self.main_sprite)  # добавим спрайт в группу
+
+        self.start_game = False
+        self.exit = False
+        self.running = True
+
+        # self.pictures_heroes_animation_small = pictures_heroes_animation_small
+        # self.pictures_heroes_large = pictures_heroes_large
+        #
+        # self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
+        # self.directory_heroes_large_name = directory_heroes_large_name
+        self.isgame_start = False
+        self.ismain_menu = False
+
+        if self.running:
+            self.run()
+        # self.delta_time = 1  # секунд
+        # self.level_time = 200  # секунд
+        #
+        # self.ismiss = True  # нужно ли уменьшать время
+
+
+    def run(self):
+        while self.running:
+            self.background_screen.fill('white')
+            self.restart_text_color = SELECTION_MENU_RESTART_TEXT_COLOR
+            self.main_menu_text_color = SELECTION_MENU_MAIN_MENU_TEXT_COLOR
+
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+            aim_x, aim_y = mouse_x, mouse_y
+            self.check_coords((mouse_x, mouse_y))
+
+            self.static_elements_sprites_group.draw(self.static_elements_screen)
+            self.draw()
+
+            if pygame.mouse.get_focused():
+                pygame.mouse.set_visible(False)
+
+                self.aim_sprite.rect.x = aim_x - self.aim_size_x_half  # 25 - половина размера прицела
+                self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
+                self.aim_sprites_group.draw(self.aim_screen)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    # print(board.get_click(event.pos))  # вывод координат клетки ad
+                    self.check_coords(event.pos, True)
+
+            self.clock.tick(self.fps)
+            pygame.display.flip()
+
+        if self.isgame_start:
+            self.game_start()
+            # self.running = False
+        elif self.ismain_menu:
+            self.main_menu()
+        else:
+            self.pygame_quit()
+
+    def pygame_quit(self):
+        pygame.quit()
+
+    def pygame_init(self):
+        pygame.init()
+
+    def check_coords(self, pos, button_down=False):
+        click_x, click_y = pos
+        self.check_restart_button(click_x, click_y, button_down)
+        self.check_main_menu_button(click_x, click_y, button_down)
+
+    def check_restart_button(self, click_x, click_y, button_down):
+        width, height = self.restart_button_width, self.restart_button_height
+        x, y = self.restart_button_x, self.restart_button_y
+        if self.check_click(click_x, click_y, x, y, width, height):
+            if button_down:  # buttondown
+                self.isgame_start = True
+                self.running = False
+            else:  # change color
+                self.restart_text_color = "white"
+                self.draw_rect(x, y, width, height, "black")
+
+    def check_main_menu_button(self, click_x, click_y, button_down):
+        width, height = self.main_menu_button_width, self.main_menu_button_height
+        x, y = self.main_menu_button_x, self.main_menu_button_y
+        if self.check_click(click_x, click_y, x, y, width, height):
+            if button_down:  # buttondown
+                self.ismain_menu = True
+                self.running = False
+            else:  # change color
+                self.main_menu_text_color = "white"
+                self.draw_rect(x, y, width, height, "black")
+
+    def check_click(self, click_x, click_y, x, y, width, height):
+         if x <= click_x <= x + width and y <= click_y <= y + height:
+            return True
+         else:
+            return False
+
+    def game_start(self):
+        # Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
+        #      DIRECTORY_HEROES_LARGE_NAME, self.level_start).run() # level_start, best_score
+        MainMenu.game_start()
+        # self.running = True
+        # self.pygame_init()
+
+    def main_menu(self):
+        MainMenu()
+
+    def draw(self):
+        self.draw_text(f"Меню",
+                       self.main_menu_text_center_x, self.main_menu_text_center_y,
+                       self.main_menu_text_color, self.main_menu_and_restart_text_size)
+        self.draw_text(f"Рестарт",
+                       self.restart_text_center_x, self.restart_text_center_y,
+                       self.restart_text_color, self.main_menu_and_restart_text_size)
+        # self.draw_text(f"{str(self.time)}", self.time_text_center_x, self.time_text_center_y, self.time_text_color, self.time_text_size)
+
+    def draw_text(self, to_write, center_x, center_y, color, size):
+        font = pygame.font.Font(f"{self.font_directory}", size)
+        text = font.render(f"{to_write}", True, color)
+        # text_x = x - text.get_width() // 2
+        # text_y = y - text.get_height() // 2
+        place = text.get_rect(center=(center_x, center_y))
+        self.static_elements_screen.blit(text, place)
+
+    def draw_rect(self, x, y, width, height, color, *radius):
+        pygame.draw.rect(self.background_screen, color, (x, y, width, height), 0)
+
+    def load_image(self, name, directory_name, colorkey=None):
+        fullname = os.path.join(directory_name, name)
+        # если файл не существует, то выходим
+        if not os.path.isfile(fullname):
+            print(f"Файл с изображением '{fullname}' не найден")
+            sys.exit()
+        image = pygame.image.load(fullname)
+        return image.convert_alpha()
 
 
 class Game:
 
     def __init__(self, pictures_heroes_animation_small, pictures_heroes_large, directory_heroes_animation_small_name,
-                 directory_heroes_large_name, level_start):  # , level_start, best_score
+                 directory_heroes_large_name):  # , level_start, best_score
         pygame.init()
         pygame.display.set_caption('игра')
 
@@ -420,7 +555,7 @@ class Game:
         self.aim_size_x_half = AIM_SIZE_HALF[0]
         self.aim_size_y_half = AIM_SIZE_HALF[1]
 
-        self.level = level_start
+        self.level = 1
         self.min_level = GAME_HEROES_MIN_V
         self.max_level = GAME_HEROES_MAX_LEVEL
 
@@ -465,6 +600,7 @@ class Game:
 
         self.delta_time = 5  # на сколько секунд увеличится время при попадании
         self.level_time = 20  # секунд
+        self.penalty = 0
 
         self.ismiss = True  # нужно ли уменьшать время
         # MainMenu()
@@ -483,7 +619,7 @@ class Game:
             self.ismiss = True  # нужно ли уменьшать время
             self.level_time = max(1, self.level_time)
 
-            seconds = round(self.level_time - (pygame.time.get_ticks() - start_ticks) / 1000)
+            seconds = round(self.level_time + self.penalty - (pygame.time.get_ticks() - start_ticks) / 1000)
             seconds_res = time.gmtime(seconds)
             current_level_time = time.strftime("%S", seconds_res)
 
@@ -529,7 +665,8 @@ class Game:
                 if i == 4:
                     hero.update_image()
                 if hero.ismiss() and self.ismiss:  # при промахе
-                    self.level_time -= 5
+                    # self.level_time -= 5
+                    self.penalty -= 5
                     self.ismiss = False  # уменьшили время, уже не нужно
 
                 if not hero.isupdate_level():
@@ -540,8 +677,8 @@ class Game:
                     self.score += 1
                     self.create_level()
                     self.create_v()
-
-                    self.level_time += self.delta_time
+                    self.penalty = 0
+                    # self.level_time += self.delta_time
                     self.coins_count += 1
                     start_ticks = pygame.time.get_ticks()
                     break
@@ -561,7 +698,8 @@ class Game:
             pygame.display.flip()
 
         if not self.quit:
-            MainMenu()
+            SelectionMenu()
+            # MainMenu()
         # /pygame.quit()
 
     def game_start(self):
@@ -798,7 +936,7 @@ class Hero(pygame.sprite.Sprite):
             # 2 - отражение при подходе к стене
             # 3 - случайная смена направления в движении
             self.motion_reflection()
-            x, y = self.rect.x, self.rect.y
+            # x, y = self.rect.x, self.rect.y
             self.rect.x += self.vx
             self.rect.y += self.vy
             self.move_random_direction()
@@ -815,9 +953,19 @@ class Hero(pygame.sprite.Sprite):
 
     def create_v(self):
         # print(v)
-        self.vx = int([rnd.randint(-self.v, -self.v // 2), rnd.randint(self.v // 2, self.v)][rnd.randrange(1)] + rnd.uniform(-rnd.random(), rnd.random()))
-        # self.vx = int(rnd.randrange(-self.v, self.v) + rnd.uniform(-rnd.random(), rnd.random()))
+
+        # self.vx = int([rnd.randint(-self.v, -self.v // 3), rnd.randint(self.v // 3, self.v) ][rnd.randrange(1)]) #  + rnd.uniform(-rnd.random(), rnd.random())
+        # --------------------------------------------
+        # if self.v:
+        #     self.vx = min(0.7 * self.v, round([- 0.25 - rnd.randint(-self.v + self.v // 3, -self.v // 3), 0.25 + rnd.randint(self.v // 3, self.v - self.v // 3)][rnd.randrange(1)] + rnd.uniform(-rnd.random(), rnd.random()), 2))
+        # else:
+        #     self.vx = 0
+        # # self.vx = int(rnd.randrange(-self.v, self.v) + rnd.uniform(-rnd.random(), rnd.random()))
+        # self.vy = round(sqrt((self.v ** 2 - self.vx ** 2)), 2)
+        # --------------------------------------------
+        self.vx = int([rnd.randint(-self.v, -self.v // 3), rnd.randint(self.v // 3, self.v)][rnd.randrange(1)])
         self.vy = (self.v ** 2 - self.vx ** 2) ** 0.5
+
         if rnd.random() > 0.5:
             self.vy *= -1
         if rnd.random() > 0.5:
