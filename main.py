@@ -3,11 +3,12 @@ import os
 import sys
 import random as rnd
 from game_settings import *
-from pictures import *
+# from pictures import *
+import glob
 import time
 import sqlite3
 import datetime
-from math import sqrt
+# from math import sqrt
 
 
 COLOR_NOT_WANTED = ""
@@ -200,15 +201,28 @@ class MainMenu:
         directory = DB_DIRECTORY
         name = DB_NAME
         fullname = os.path.join(directory, name)
-
         con = sqlite3.connect(fullname)
         cur = con.cursor()
-
         result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()
-
-        self.coins_count = result[0][2]
+        self.set_of_heroes = result[0][2]
+        self.coins_count = result[0][1]
         self.best_score = result[0][0]
+        con.commit()
 
+    def update_db(self):
+        directory = DB_DIRECTORY
+        name = DB_NAME
+        fullname = os.path.join(directory, name)
+        con = sqlite3.connect(fullname)
+        cur = con.cursor()
+        result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()[0]
+        # sql = """UPDATE statistics SET best_score = """ + str(max(int(self.score), int(result[0])))
+        sql = """UPDATE statistics SET best_score = """ + str(self.best_score)
+        cur.execute(sql)
+        sql = """UPDATE statistics SET coins = """ + str(self.coins_count)
+        cur.execute(sql)
+        sql = """UPDATE statistics SET collection_of_heroes = """ + str(self.set_of_heroes)
+        cur.execute(sql)
         con.commit()
 
     def run(self):
@@ -295,8 +309,10 @@ class MainMenu:
             return False
 
     def game_start(self):
-        Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
-             DIRECTORY_HEROES_LARGE_NAME).run() # level_start, best_score
+        Game().run() # level_start, best_score
+
+        # Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
+        #              DIRECTORY_HEROES_LARGE_NAME).run() # level_start, best_score
         # self.running = True
         # self.pygame_init()
 
@@ -419,7 +435,6 @@ class SelectionMenu:
         #
         # self.ismiss = True  # нужно ли уменьшать время
 
-
     def run(self):
         while self.running:
             self.background_screen.fill('white')
@@ -540,10 +555,8 @@ class SelectionMenu:
 
 class Game:
 
-    def __init__(self, pictures_heroes_animation_small, pictures_heroes_large, directory_heroes_animation_small_name,
-                 directory_heroes_large_name):  # , level_start, best_score
-        pygame.init()
-        pygame.display.set_caption('игра')
+    def __init__(self):  # , , pictures_heroes_large, directory_heroes_animation_small_name,
+                 # directory_heroes_large_name level_start, best_score
 
         self.size = SCREEN_SIZE
         self.fps = FPS
@@ -592,15 +605,29 @@ class Game:
 
         self.get_from_db()
 
-        self.pictures_heroes_animation_small = pictures_heroes_animation_small
-        self.pictures_heroes_large = pictures_heroes_large
+        # self.pictures_heroes_animation_small = pictures_heroes_animation_small
+        # self.pictures_heroes_large = pictures_heroes_large
 
-        self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
-        self.directory_heroes_large_name = directory_heroes_large_name
+        self.pictures_heroes_animation_small = []
+        self.pictures_heroes_large = []
+
+        # self.pictures_heroes_animation_small = ""
+        # self.pictures_heroes_large = ""
+
+        self.directory_heroes_animation_small_name = ""
+        self.directory_heroes_large_name = ""
 
         self.delta_time = 5  # на сколько секунд увеличится время при попадании
         self.level_time = 20  # секунд
         self.penalty = 0
+
+        self.font_directory = FONT_DIRECTORY
+
+        self.time_penalty_text_delta_y = GAME_TIME_PENALTY_TEXT_DELTA_Y
+        self.time_penalty_text_delta_y = GAME_TIME_PENALTY_TEXT_DELTA_Y
+        self.time_penalty_text_color = GAME_TIME_PENALTY_TEXT_COLOR
+        self.time_penalty_text_size = GAME_TIME_PENALTY_TEXT_SIZE
+        self.isdraw_time_penalty_text = False
 
         self.ismiss = True  # нужно ли уменьшать время
         # MainMenu()
@@ -611,7 +638,7 @@ class Game:
         self.update_level(self.level)
         i = 0  # счетчик обновления смайла
         start_ticks = pygame.time.get_ticks()  # starter tick
-
+        time_penalty_text_start_tick = pygame.time.get_ticks()
         info_board = InfoBoard(self.static_elements_screen, self.score, self.best_score, self.level_time)
         while self.running:
             self.background_screen.fill('white')
@@ -625,6 +652,7 @@ class Game:
 
             mouse_x, mouse_y = pygame.mouse.get_pos()
             aim_x, aim_y = mouse_x, mouse_y
+
             if self.score > self.black_rect_level:
                 k = 4000
                 self.white_circle_radius = min(400, max(70, k / max(1, self.score)))
@@ -633,6 +661,15 @@ class Game:
                 # self.cover_surf.set_alpha(300)
 
             self.heroes_sprites_group.draw(self.heroes_sprites_screen)
+
+            # штраф отрисовка
+            if self.isdraw_time_penalty_text:
+                if (pygame.time.get_ticks() - time_penalty_text_start_tick) / 1000 < 0.2:
+                    time_penalty_text_center_x, time_penalty_text_center_y = aim_x, aim_y + self.time_penalty_text_delta_y
+                    self.draw_text(f"-{str(self.delta_time)}", time_penalty_text_center_x, time_penalty_text_center_y,
+                                   self.time_penalty_text_color, self.time_penalty_text_size)  # ШТРАФ
+                else:
+                    self.isdraw_time_penalty_text = False
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
@@ -656,18 +693,19 @@ class Game:
                     self.quit = True
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    # print(board.get_click(event.pos))  # вывод координат клетки
                     self.heroes_sprites_group.update(event)
             # счетчик обновления картинок анимации
             i += 1
-            i %= 5
+            i %= 7
             for hero in self.heroes_sprites_group:
-                if i == 4:
+                if i == 6:
                     hero.update_image()
                 if hero.ismiss() and self.ismiss:  # при промахе
                     # self.level_time -= 5
                     self.penalty -= 5
+                    self.isdraw_time_penalty_text = True
                     self.ismiss = False  # уменьшили время, уже не нужно
+                    time_penalty_text_start_tick = pygame.time.get_ticks()  # штраф
 
                 if not hero.isupdate_level():
                     hero.unmiss()  # убрать флаг об уменьшении времени у всех героев
@@ -682,6 +720,7 @@ class Game:
                     self.coins_count += 1
                     start_ticks = pygame.time.get_ticks()
                     break
+
             self.level_time = min(59, max(1, self.level_time))
 
             # удалить спрайты смайлов и обновить уровень
@@ -723,7 +762,8 @@ class Game:
         con = sqlite3.connect(fullname)
         cur = con.cursor()
         result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()
-        self.coins_count = result[0][2]
+        self.set_of_heroes = result[0][2]
+        self.coins_count = result[0][1]
         self.best_score = result[0][0]
         con.commit()
 
@@ -739,10 +779,11 @@ class Game:
         cur.execute(sql)
         sql = """UPDATE statistics SET coins = """ + str(self.coins_count)
         cur.execute(sql)
+        sql = """UPDATE statistics SET collection_of_heroes = """ + str(self.set_of_heroes)
+        cur.execute(sql)
         con.commit()
 
     # def draw_info_board(self):
-
     def load_image(self, name, directory_name, colorkey=None):
         fullname = os.path.join(directory_name, name)
         # если файл не существует, то выходим
@@ -766,41 +807,71 @@ class Game:
             wanted = False
             table_info = False
 
+    def get_pictures(self):
+        pictures_heroes_animation_small, pictures_heroes_large = [], []
+        self.directory_heroes_animation_small_name = f"data\heroes_{self.set_of_heroes}\heroes_animation_small"
+        self.directory_heroes_large_name = f"data\heroes_{self.set_of_heroes}\heroes_large"
+        for file in glob.glob(f'{self.directory_heroes_animation_small_name}\*.png'):
+            pictures_heroes_animation_small.append(file.split("\\")[-1])
+        for file in glob.glob(f'{self.directory_heroes_large_name}\*.png'):
+            pictures_heroes_large.append(file.split("\\")[-1])
+        return pictures_heroes_animation_small, pictures_heroes_large
+
     def choose_picture(self, *pictures_used):
-        pictures = self.pictures_heroes_animation_small[:]
-        directory_heroes_animation_small_name = self.directory_heroes_animation_small_name  # директория с фреймами для анимации
-        directory_heroes_large_name = self.directory_heroes_large_name
+        # pictures = self.pictures_heroes_animation_small[:]
+        pictures_heroes_animation_small, pictures_heroes_large = self.get_pictures()
+        pictures = pictures_heroes_animation_small[:]
+        # directory_heroes_animation_small_name = self.directory_heroes_animation_small_name  # директория с фреймами для анимации
+        # directory_heroes_large_name = self.directory_heroes_large_name
 
         # if pictures_used:
         #     for picture in pictures_used:
         #         if picture in pictures:
         #             pictures.remove(picture)
+        pictures_count = 3
+        pictures_to_use = rnd.sample(pictures, pictures_count)
 
-        pictures_not_wanted = self.choose_pictures_not_wanted(pictures, self.level)
-        for picture_not_wanted in pictures_not_wanted:
-            pictures.remove(picture_not_wanted)
-        picture_wanted = pictures[rnd.randrange(len(pictures))]
+        picture_wanted = pictures_to_use[0]
         picture_wanted_large = picture_wanted.split('_')[1] + '_large.png'
+        pictures_not_wanted = pictures_to_use[1:3]
 
-        images_not_wanted = [self.load_image(picture, directory_heroes_animation_small_name) for picture in pictures_not_wanted]
-        image_wanted = self.load_image(picture_wanted, directory_heroes_animation_small_name)
-        image_wanted_large = self.load_image(picture_wanted_large, directory_heroes_large_name)
+        # print(pictures_to_use)
+        # print(picture_wanted, picture_wanted_large)
+        # print(pictures_not_wanted)
+        # pictures_not_wanted = self.choose_pictures_not_wanted(pictures, self.level)
+        # for picture_not_wanted in pictures_not_wanted:
+        #     pictures.remove(picture_not_wanted)
+        # picture_wanted = pictures[rnd.randrange(len(pictures))]
+        # picture_wanted_large = picture_wanted.split('_')[1] + '_large.png'
+        images_not_wanted = [self.load_image(picture, self.directory_heroes_animation_small_name) for picture in pictures_not_wanted]
+        image_wanted = self.load_image(picture_wanted, self.directory_heroes_animation_small_name)
+        image_wanted_large = self.load_image(picture_wanted_large, self.directory_heroes_large_name)
 
         return image_wanted, image_wanted_large, images_not_wanted
 
-    def choose_pictures_not_wanted(self, pictures, level):
-        pictures = pictures[:]
-        pictures_not_wanted = []
-        pictures_count = min(level, len(pictures) - 1)
-        # print(pictures_count)
-        try:
-            for n in range(pictures_count):
-                picture_not_wanted = pictures[rnd.randrange(len(pictures))]
-                pictures_not_wanted.append(picture_not_wanted)
-                pictures.remove(picture_not_wanted)
-            return pictures_not_wanted
-        except Exception as e:
-            print(e)
+    # def choose_pictures_not_wanted(self, pictures, level):
+    #     #  подается список названий картинок и из них рандомно выбирается 2
+    #     pictures = pictures[:]
+    #     pictures_not_wanted = []
+    #     # pictures_count = min(level, len(pictures) - 1)
+    #     pictures_count = 2
+    #     # print(pictures_count)
+    #     try:
+    #         for n in range(pictures_count):
+    #             picture_not_wanted = pictures[rnd.randrange(len(pictures))]
+    #             pictures_not_wanted.append(picture_not_wanted)
+    #             pictures.remove(picture_not_wanted)
+    #         return pictures_not_wanted
+    #     except Exception as e:
+    #         print(e)
+
+    def draw_text(self, to_write, center_x, center_y, color, size):
+        font = pygame.font.Font(f"{self.font_directory}", size)
+        text = font.render(f"{to_write}", True, color)
+        # text_x = x - text.get_width() // 2
+        # text_y = y - text.get_height() // 2
+        place = text.get_rect(center=(center_x, center_y))
+        self.aim_screen.blit(text, place)
 
 
 class Hero(pygame.sprite.Sprite):
@@ -859,26 +930,6 @@ class Hero(pygame.sprite.Sprite):
             self.cur_frame = (self.cur_frame + 1) % len(self.frames)
             self.image = self.frames[self.cur_frame]
 
-    def change_color(self, *pictures_used):
-        picture_hero_not_wanted, picture_hero_wanted = self.choose_color("data\smiles_1")
-        image_not_wanted = self.load_image(picture_hero_not_wanted, "data\smiles_1")
-        image_wanted = self.load_image(picture_hero_wanted, "data\smiles_1")
-        return image_wanted, image_not_wanted, picture_hero_wanted, picture_hero_not_wanted
-
-    def create_colors(self):
-        pass
-
-    def choose_color(self, name_directory, *pictures_used):
-        pictures = PICTURES[:]
-        if pictures_used:
-            for picture in pictures_used:
-                if picture in pictures:
-                    pictures.remove(picture)
-        picture_not_wanted = pictures[rnd.randrange(len(pictures))]
-        pictures.remove(picture_not_wanted)
-        picture_wanted = pictures[rnd.randrange(len(pictures))]
-        return (picture_not_wanted, picture_wanted)
-
     def update_position(self):
         if self.table_info:
             self.rect.x, self.rect.y = 950, 75
@@ -886,17 +937,7 @@ class Hero(pygame.sprite.Sprite):
             self.rect.x = rnd.randrange(70, GAME_FIELD_WIDTH)
             self.rect.y = rnd.randrange(70, GAME_FILED_HEIGHT)
 
-    def load_image(self, name, name_directory, colorkey=None):
-        fullname = os.path.join(name_directory, name)
-        # если файл не существует, то выходим
-        if not os.path.isfile(fullname):
-            print(f"Файл с изображением '{fullname}' не найден")
-            sys.exit()
-        image = pygame.image.load(fullname)
-        return image.convert_alpha()
-
     def update(self, *args):
-
         if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
             if self.wanted and not self.table_info:
                 self.update_level = True
@@ -981,9 +1022,6 @@ class Hero(pygame.sprite.Sprite):
     def move_random_direction(self):
         if rnd.random() > 0.995:
             self.create_v()
-
-    def jump(self):
-        self.rect = self.rect.move(rnd.randrange(3) - 1, rnd.randrange(3) - 1)
 
 
 class InfoBoard:
@@ -1236,6 +1274,6 @@ if __name__ == '__main__':
     #     pygame.display.flip()
     # pygame.quit()
     # level_start, best_score = 100, 1
-    MainMenu()
+    MainMenu() 
 #     Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
 # DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()
