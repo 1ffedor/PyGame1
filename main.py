@@ -7,7 +7,7 @@ from pictures import *
 import time
 import sqlite3
 import datetime
-from math import sqrt
+# from math import sqrt
 
 
 COLOR_NOT_WANTED = ""
@@ -660,9 +660,9 @@ class Game:
                     self.heroes_sprites_group.update(event)
             # счетчик обновления картинок анимации
             i += 1
-            i %= 5
+            i %= 7
             for hero in self.heroes_sprites_group:
-                if i == 4:
+                if i == 6:
                     hero.update_image()
                 if hero.ismiss() and self.ismiss:  # при промахе
                     # self.level_time -= 5

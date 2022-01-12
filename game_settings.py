@@ -39,8 +39,8 @@ HEROES_DIRECTORIES = ""
 # MAIN_MENU_BEST_SCORE_TEXT_COLOR = "black"  # 4747ff
 
 
-DIRECTORY_HEROES_ANIMATION_SMALL_NAME = r"data\heroes_1\heroes_animation_small"
-DIRECTORY_HEROES_LARGE_NAME = r"data\heroes_1\heroes_large"
+DIRECTORY_HEROES_ANIMATION_SMALL_NAME = r"data\heroes_2\heroes_animation_small"
+DIRECTORY_HEROES_LARGE_NAME = r"data\heroes_2\heroes_large"
 
 
 
@@ -140,6 +140,11 @@ MAIN_MENU_ARROW_RIGHT_SPRITE_Y = 634
 GAME_FIELD_WIDTH = 800 - 50
 GAME_FILED_HEIGHT = HEIGHT - 50
 GAME_FIELD = (GAME_FIELD_WIDTH, GAME_FILED_HEIGHT)
+
+
+GAME_DIRECTORY_HEROES_ANIMATION_SMALL_NAME = r"data\heroes_xx\heroes_animation_small"
+GAME_DIRECTORY_HEROES_LARGE_NAME = r"data\heroes_xx\heroes_large"
+
 
 GAME_HEROES_MIN_V = 59
 GAME_HEROES_MAX_V = 280
