@@ -76,10 +76,20 @@ class MainMenu:
         self.set_of_heroes_lock_sprite_x = MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_X
         self.set_of_heroes_lock_sprite_y = MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_Y
 
-        self.set_of_heroes_text_center_x = MAIN_MENU_SET_OF_HEROES_TEXT_CENTER_X
-        self.set_of_heroes_text_center_y = MAIN_MENU_SET_OF_HEROES_TEXT_CENTER_Y
-        self.set_of_heroes_text_color = MAIN_MENU_SET_OF_HEROES_TEXT_COLOR
-        self.set_of_heroes_text_size = MAIN_MENU_SET_OF_HEROES_TEXT_SIZE
+        self.set_of_heroes_coins_text_center_x = MAIN_MENU_SET_OF_HEROES_COINS_TEXT_CENTER_X
+        self.set_of_heroes_coins_text_center_y = MAIN_MENU_SET_OF_HEROES_COINS_TEXT_CENTER_Y
+        self.set_of_heroes_coins_text_color = MAIN_MENU_SET_OF_HEROES_COINS_TEXT_COLOR
+        self.set_of_heroes_coins_text_size = MAIN_MENU_SET_OF_HEROES_COINS_TEXT_SIZE
+
+        self.set_of_heroes_need_text_center_x = MAIN_MENU_SET_OF_HEROES_NEED_TEXT_CENTER_X
+        self.set_of_heroes_need_text_center_y = MAIN_MENU_SET_OF_HEROES_NEED_TEXT_CENTER_Y
+        self.set_of_heroes_need_text_color = MAIN_MENU_SET_OF_HEROES_NEED_TEXT_COLOR
+        self.set_of_heroes_need_text_size = MAIN_MENU_SET_OF_HEROES_NEED_TEXT_SIZE
+
+        self.set_of_heroes_buy_sprite_directory = MAIN_MENU_SET_OF_HEROES_BUY_SPRITE_DIRECTORY
+        self.set_of_heroes_buy_sprite_name = MAIN_MENU_SET_OF_HEROES_BUY_SPRITE_NAME
+        self.set_of_heroes_buy_sprite_x = MAIN_MENU_SET_OF_HEROES_BUY_SPRITE_X
+        self.set_of_heroes_buy_sprite_y = MAIN_MENU_SET_OF_HEROES_BUY_SPRITE_Y
 
         self.arrow_left_sprite_directory = MAIN_MENU_ARROW_LEFT_SPRITE_DIRECTORY
         self.arrow_left_sprite_name = MAIN_MENU_ARROW_LEFT_SPRITE_NAME
@@ -115,6 +125,7 @@ class MainMenu:
         self.static_elements_sprites_group = pygame.sprite.Group()
         self.heroes_lock_sprites_group = pygame.sprite.Group()
         self.hero_sprites_group = pygame.sprite.Group()
+        self.buy_sprites_group = pygame.sprite.Group()  # кнопка играть
 
         # создаем спрайты
         self.title_sprite = pygame.sprite.Sprite()
@@ -163,6 +174,17 @@ class MainMenu:
         self.play_sprite.rect.y = self.play_sprite_y
         self.static_elements_sprites_group.add(self.play_sprite)  # добавим спрайт в группу
 
+        # кнопка купить
+        self.set_of_heroes_buy_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.set_of_heroes_buy_sprite.image = \
+            self.load_image(f"{self.set_of_heroes_buy_sprite_name}",
+                            f"{self.set_of_heroes_buy_sprite_directory}")  # определим его вид
+        self.set_of_heroes_buy_sprite.rect = self.set_of_heroes_buy_sprite.image.get_rect()  # и размеры
+        self.set_of_heroes_buy_sprite.rect.x = self.set_of_heroes_buy_sprite_x
+        self.set_of_heroes_buy_sprite.rect.y = self.set_of_heroes_buy_sprite_y
+        self.buy_sprites_group.add(self.set_of_heroes_buy_sprite)  # добавим спрайт в группу
+
+
         # стрелки
         self.arrow_left_sprite = pygame.sprite.Sprite()  # создадим спрайт
         self.arrow_left_sprite.image = \
@@ -202,8 +224,9 @@ class MainMenu:
 
         self.ischange_smiles_picture = True # менять ли картинку
         self.change_smiles_picture_side = 0  # в какую сторону менять лево -1, право +1
-        self.isdraw_heroes_lock_text = False  # рисовать ли текст сколько монет осталось
-
+        self.isdraw_heroes_lock_coins_text = False  # рисовать ли текст сколько монет осталось
+        self.isdraw_heroes_lock_need_text = False  # рисовать ли текст требуется
+        self.isdraw_buy_button = False  # кнопка купить
 
         self.isgame_start = False
         if self.running:
@@ -242,13 +265,11 @@ class MainMenu:
         cur.execute(sql)
         sql = """UPDATE statistics SET coins = """ + str(self.coins_count)
         cur.execute(sql)
-        sql = """UPDATE statistics SET collection_of_heroes = """ + str(self.set_of_heroes)
+        if self.set_of_heroes_isbought:
+            sql = """UPDATE statistics SET collection_of_heroes = """ + str(self.set_of_heroes)
+            cur.execute(sql)
+        sql = f"""UPDATE collections SET isbought = {str(self.set_of_heroes_isbought)} WHERE num = {self.set_of_heroes}"""
         cur.execute(sql)
-        sql = """UPDATE collections SET num = """ + str(self.set_of_heroes)
-        cur.execute(sql)
-        sql = """UPDATE collections SET isbought = """ + str(self.set_of_heroes_isbought)
-        cur.execute(sql)
-
         con.commit()
 
     def get_picture(self):
@@ -287,6 +308,8 @@ class MainMenu:
 
             self.static_elements_sprites_group.draw(self.static_elements_screen)
             self.draw_texts()
+            if self.isdraw_buy_button:
+                self.buy_sprites_group.draw(self.static_elements_screen)
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
@@ -323,58 +346,66 @@ class MainMenu:
     def check_coords(self, pos, button_down=False):
         click_x, click_y = pos
         self.check_play_button(click_x, click_y, button_down)
-        self.check_arrows(click_x, click_y, button_down)
+        if button_down:
+            self.check_arrows(click_x, click_y, button_down)
+            self.check_buy_button(click_x, click_y, button_down)
 
     def check_arrows(self, click_x, click_y, button_down):
         self.check_left_arrow(click_x, click_y, button_down)
         self.check_right_arrow(click_x, click_y, button_down)
 
     def check_left_arrow(self, click_x, click_y, button_down):
-        width, height = self.arrow_left_sprite.image.get_size()
-        x, y = self.arrow_left_sprite_x, self.arrow_left_sprite_y
-        if self.check_click(click_x, click_y, x, y, width, height):
-            if button_down:
-                self.ischange_smiles_picture = True
-                self.change_smiles_picture_side = -1
+        if self.arrow_left_sprite.rect.collidepoint(click_x, click_y):
+            self.ischange_smiles_picture = True
+            self.change_smiles_picture_side = -1
 
     def check_right_arrow(self, click_x, click_y, button_down):
-        width, height = self.arrow_right_sprite.image.get_size()
-        x, y = self.arrow_right_sprite_x, self.arrow_right_sprite_y
-        if self.check_click(click_x, click_y, x, y, width, height):
-            if button_down:
-                self.ischange_smiles_picture = True
-                self.change_smiles_picture_side = 1
+        if self.arrow_right_sprite.rect.collidepoint(click_x, click_y):
+            self.ischange_smiles_picture = True
+            self.change_smiles_picture_side = 1
+
+    def check_buy_button(self, click_x, click_y, button_down):
+        if self.set_of_heroes_buy_sprite.rect.collidepoint(click_x, click_y):
+            #  при покупке
+            self.coins_count -= self.set_of_heroes_coins_need
+            self.set_of_heroes_isbought = True
+
+            self.isdraw_heroes_lock = False
+            self.isdraw_buy_button = False
+            self.isdraw_heroes_lock_need_text = False
+            self.isdraw_heroes_lock_coins_text = False
+
+            self.sets_of_heroes_data[self.set_of_heroes] = (self.set_of_heroes, self.set_of_heroes_isbought, self.set_of_heroes_coins_need)
+
+            self.update_db()
 
     def check_hero(self):
         if not self.set_of_heroes_isbought:  # если не куплен
             self.isdraw_heroes_lock = True
             if self.coins_count >= self.set_of_heroes_coins_need:  # если монет хватает
-                pass
-                # self.isdraw_heroes_lock_text = True
+                self.isdraw_heroes_lock_coins_text = True
+                self.isdraw_buy_button = True
                 # рисовать кнопку купить
             else:
                 # рисовать текст
-                self.isdraw_heroes_lock_text = True
+                self.isdraw_buy_button = False
+                self.isdraw_heroes_lock_need_text = True
+                self.isdraw_heroes_lock_coins_text = True
         else:
-            self.isdraw_heroes_lock_text = False
+            self.isdraw_buy_button = False
+            self.isdraw_heroes_lock_coins_text = False
             self.isdraw_heroes_lock = False
 
     def check_play_button(self, click_x, click_y, button_down):
         width, height = self.play_sprite.image.get_size()
         x, y = self.play_sprite_x, self.play_sprite_y
-        if self.check_click(click_x, click_y, x, y, width, height):
+        if self.play_sprite.rect.collidepoint(click_x, click_y):
             if button_down:  # buttondown
                 self.isgame_start = True
                 self.running = False
             else:  # change color
                 self.play_text_color = "white"
                 self.draw_rect(x, y, width, height, "black")
-
-    def check_click(self, click_x, click_y, x, y, width, height):
-         if x <= click_x <= x + width and y <= click_y <= y + height:
-            return True
-         else:
-            return False
 
     def game_start(self):
         Game().run() # level_start, best_score
@@ -394,8 +425,10 @@ class MainMenu:
                        self.coins_count_text_center_x, self.coins_count_text_center_y,
                        self.best_score_and_coins_count_text_color, self.best_score_and_coins_count_text_size)
         self.draw_text(f"ИГРАТЬ", self.play_text_center_x, self.play_text_center_y, self.play_text_color, self.play_text_size)
-        if self.isdraw_heroes_lock_text:  # сли нужно рисовать текст
-            self.draw_text(f"{str(self.set_of_heroes_coins_need)}", self.set_of_heroes_text_center_x, self.set_of_heroes_text_center_y, self.set_of_heroes_text_color, self.set_of_heroes_text_size)
+        if self.isdraw_heroes_lock_coins_text:  # если нужно рисовать текст
+            if self.isdraw_heroes_lock_need_text:
+                self.draw_text(f"ТРЕБУЕТСЯ", self.set_of_heroes_need_text_center_x, self.set_of_heroes_need_text_center_y, self.set_of_heroes_need_text_color, self.set_of_heroes_need_text_size)
+            self.draw_text(f"{str(self.set_of_heroes_coins_need)}", self.set_of_heroes_coins_text_center_x, self.set_of_heroes_coins_text_center_y, self.set_of_heroes_coins_text_color, self.set_of_heroes_coins_text_size)
         # self.draw_text(f"Рекорд: {self.best_score}", self.best_score_text_x, self.best_score_text_y, self.best_score_text_color)  # счет
 
     def draw_text(self, to_write, center_x, center_y, color, size):
