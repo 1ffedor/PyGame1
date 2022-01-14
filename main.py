@@ -200,7 +200,7 @@ class MainMenu:
         # self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
         # self.directory_heroes_large_name = directory_heroes_large_name
 
-        self.ischange_smiles_picture = False  # менять ли картинку
+        self.ischange_smiles_picture = True # менять ли картинку
         self.change_smiles_picture_side = 0  # в какую сторону менять лево -1, право +1
         self.isdraw_heroes_lock_text = False  # рисовать ли текст сколько монет осталось
 
@@ -224,10 +224,11 @@ class MainMenu:
         self.coins_count = result[0][1]
         self.best_score = result[0][0]
 
-        result = cur.execute(f"""SELECT * FROM collections WHERE num = {self.set_of_heroes}""").fetchall()
+        result = cur.execute(f"""SELECT * FROM collections""").fetchall()
 
-        self.set_of_heroes_isbought = result[0][1]
-        self.set_of_heroes_coins_need = result[0][2]
+        self.sets_of_heroes_data = result
+        self.set_of_heroes_isbought = result[self.set_of_heroes][1]
+        self.set_of_heroes_coins_need = result[self.set_of_heroes][2]
         con.commit()
 
     def update_db(self):
@@ -269,17 +270,21 @@ class MainMenu:
             aim_x, aim_y = mouse_x, mouse_y
             self.check_coords((mouse_x, mouse_y))
 
-            self.check_hero()  # проверить наборы
-
             if self.ischange_smiles_picture:
-                self.set_of_heroes = (self.set_of_heroes + self.change_smiles_picture_side) % 2
+                self.set_of_heroes = (self.set_of_heroes + self.change_smiles_picture_side) % 2  # номер набора
+
+                self.set_of_heroes_isbought = self.sets_of_heroes_data[self.set_of_heroes][1]  # куплен или нет
+                self.set_of_heroes_coins_need = self.sets_of_heroes_data[self.set_of_heroes][2]  # сколько монет требуется
+                self.check_hero()  # проверить наборы
 
                 self.hero_sprite.image = self.get_picture()
                 self.ischange_smiles_picture = False
 
             self.hero_sprites_group.draw(self.hero_screen)
             if self.isdraw_heroes_lock:
+
                 self.heroes_lock_sprites_group.draw(self.heroes_lock_screen)
+
             self.static_elements_sprites_group.draw(self.static_elements_screen)
             self.draw_texts()
 
@@ -341,15 +346,18 @@ class MainMenu:
                 self.change_smiles_picture_side = 1
 
     def check_hero(self):
-        if self.set_of_heroes_isbought:  # если не куплен
+        if not self.set_of_heroes_isbought:  # если не куплен
             self.isdraw_heroes_lock = True
             if self.coins_count >= self.set_of_heroes_coins_need:  # если монет хватает
-                self.isdraw_heroes_lock_text = True
+                pass
+                # self.isdraw_heroes_lock_text = True
                 # рисовать кнопку купить
             else:
                 # рисовать текст
                 self.isdraw_heroes_lock_text = True
-
+        else:
+            self.isdraw_heroes_lock_text = False
+            self.isdraw_heroes_lock = False
 
     def check_play_button(self, click_x, click_y, button_down):
         width, height = self.play_sprite.image.get_size()
