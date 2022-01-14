@@ -25,6 +25,11 @@ class MainMenu:
         self.size = SCREEN_SIZE
         self.fps = FPS
 
+        self.set_of_heroes = 0  # номер набора смайлов
+        self.set_of_heroes_isbought = False
+        self.set_of_heroes_coins_need = 0
+        self.get_from_db()
+
         self.aim_size = AIM_SIZE
         self.aim_size_x = AIM_SIZE[0]
         self.aim_size_y = AIM_SIZE[1]
@@ -71,9 +76,10 @@ class MainMenu:
         self.set_of_heroes_lock_sprite_x = MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_X
         self.set_of_heroes_lock_sprite_y = MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_Y
 
-        self.set_of_heroes_lock_text_center_x = MAIN_MENU_SET_OF_HEROES_LOCK_TEXT_CENTER_X
-        self.set_of_heroes_lock_text_center_y = MAIN_MENU_SET_OF_HEROES_LOCK_TEXT_CENTER_Y
-        self.set_of_heroes_lock_text_size = MAIN_MENU_SET_OF_HEROES_LOCK_TEXT_SIZE
+        self.set_of_heroes_text_center_x = MAIN_MENU_SET_OF_HEROES_TEXT_CENTER_X
+        self.set_of_heroes_text_center_y = MAIN_MENU_SET_OF_HEROES_TEXT_CENTER_Y
+        self.set_of_heroes_text_color = MAIN_MENU_SET_OF_HEROES_TEXT_COLOR
+        self.set_of_heroes_text_size = MAIN_MENU_SET_OF_HEROES_TEXT_SIZE
 
         self.arrow_left_sprite_directory = MAIN_MENU_ARROW_LEFT_SPRITE_DIRECTORY
         self.arrow_left_sprite_name = MAIN_MENU_ARROW_LEFT_SPRITE_NAME
@@ -90,6 +96,7 @@ class MainMenu:
         # экраны
         self.background_screen = pygame.display.set_mode(self.size)
         self.static_elements_screen = pygame.display.set_mode(self.size)
+        self.hero_screen = pygame.display.set_mode(self.size)
         self.heroes_lock_screen = pygame.display.set_mode(self.size)
         self.aim_screen = pygame.display.set_mode(self.size)
 
@@ -102,10 +109,12 @@ class MainMenu:
         self.aim_sprite.rect = self.aim_sprite.image.get_rect()  # и размеры
         self.aim_sprites_group.add(self.aim_sprite)  # добавим спрайт в группу
 
-        self.heroes_sprites_group = pygame.sprite.Group()
+        self.hero_sprite_x = MAIN_MENU_HERO_SPITE_X
+        self.hero_sprite_y = MAIN_MENU_HERO_SPITE_Y
 
         self.static_elements_sprites_group = pygame.sprite.Group()
-        self.heroes_lock = pygame.sprite.Group()
+        self.heroes_lock_sprites_group = pygame.sprite.Group()
+        self.hero_sprites_group = pygame.sprite.Group()
 
         # создаем спрайты
         self.title_sprite = pygame.sprite.Sprite()
@@ -131,7 +140,9 @@ class MainMenu:
         self.set_of_heroes_lock_sprite.rect = self.set_of_heroes_lock_sprite.image.get_rect()  # и размеры
         self.set_of_heroes_lock_sprite.rect.x = self.set_of_heroes_lock_sprite_x
         self.set_of_heroes_lock_sprite.rect.y = self.set_of_heroes_lock_sprite_y
-        self.heroes_lock.add(self.set_of_heroes_lock_sprite)  # добавим спрайт в группу
+        self.heroes_lock_sprites_group.add(self.set_of_heroes_lock_sprite)  # добавим спрайт в группу
+
+        self.isdraw_heroes_lock = False  # рисовать ли замок
 
         self.set_of_heroes_sprite = pygame.sprite.Sprite()  # создадим спрайт
         self.set_of_heroes_sprite.image = \
@@ -164,12 +175,18 @@ class MainMenu:
 
         self.arrow_right_sprite = pygame.sprite.Sprite()  # создадим спрайт
         self.arrow_right_sprite.image = \
-            self.load_image(f"{self.arrow_right_sprite_name}",
-                            f"{self.arrow_right_sprite_directory}")  # определим его вид
+            self.load_image(f"{self.arrow_right_sprite_name}", f"{self.arrow_right_sprite_directory}")  # определим его вид
         self.arrow_right_sprite.rect = self.arrow_right_sprite.image.get_rect()  # и размеры
         self.arrow_right_sprite.rect.x = self.arrow_right_sprite_x
         self.arrow_right_sprite.rect.y = self.arrow_right_sprite_y
         self.static_elements_sprites_group.add(self.arrow_right_sprite)  # добавим спрайт в группу
+
+        self.hero_sprite = pygame.sprite.Sprite()  # создадим спрайт
+        self.hero_sprite.image = self.get_picture()
+        self.hero_sprite.rect = self.hero_sprite.image.get_rect()  # и размеры
+        self.hero_sprite.rect.x = self.hero_sprite_x
+        self.hero_sprite.rect.y = self.hero_sprite_y
+        self.hero_sprites_group.add(self.hero_sprite)  # добавим спрайт в
 
         self.level_start = 1
 
@@ -185,11 +202,10 @@ class MainMenu:
 
         self.ischange_smiles_picture = False  # менять ли картинку
         self.change_smiles_picture_side = 0  # в какую сторону менять лево -1, право +1
+        self.isdraw_heroes_lock_text = False  # рисовать ли текст сколько монет осталось
 
-        self.get_from_db()
 
         self.isgame_start = False
-
         if self.running:
             self.run()
         # self.delta_time = 1  # секунд
@@ -203,10 +219,15 @@ class MainMenu:
         fullname = os.path.join(directory, name)
         con = sqlite3.connect(fullname)
         cur = con.cursor()
-        result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()
+        result = cur.execute(f"""SELECT * FROM statistics""").fetchall()
         self.set_of_heroes = result[0][2]
         self.coins_count = result[0][1]
         self.best_score = result[0][0]
+
+        result = cur.execute(f"""SELECT * FROM collections WHERE num = {self.set_of_heroes}""").fetchall()
+
+        self.set_of_heroes_isbought = result[0][1]
+        self.set_of_heroes_coins_need = result[0][2]
         con.commit()
 
     def update_db(self):
@@ -215,7 +236,6 @@ class MainMenu:
         fullname = os.path.join(directory, name)
         con = sqlite3.connect(fullname)
         cur = con.cursor()
-        result = cur.execute(f"""SELECT * FROM {name.split('.')[0]}""").fetchall()[0]
         # sql = """UPDATE statistics SET best_score = """ + str(max(int(self.score), int(result[0])))
         sql = """UPDATE statistics SET best_score = """ + str(self.best_score)
         cur.execute(sql)
@@ -223,7 +243,22 @@ class MainMenu:
         cur.execute(sql)
         sql = """UPDATE statistics SET collection_of_heroes = """ + str(self.set_of_heroes)
         cur.execute(sql)
+        sql = """UPDATE collections SET num = """ + str(self.set_of_heroes)
+        cur.execute(sql)
+        sql = """UPDATE collections SET isbought = """ + str(self.set_of_heroes_isbought)
+        cur.execute(sql)
+
         con.commit()
+
+    def get_picture(self):
+        pictures_heroes_large = [], []
+        self.directory_heroes_large_name = f"data\heroes_{self.set_of_heroes}\heroes_large"
+        picture = glob.glob(f'{self.directory_heroes_large_name}\*.png')[0].split("\\")[-1]
+        # for file in glob.glob(f'{self.directory_heroes_large_name}\*.png'):
+        #     pictures_heroes_large.append(file.split("\\")[-1])
+        # return pictures_heroes_large[0]
+        hero_image = self.load_image(picture, self.directory_heroes_large_name)
+        return hero_image
 
     def run(self):
         while self.running:
@@ -234,9 +269,19 @@ class MainMenu:
             aim_x, aim_y = mouse_x, mouse_y
             self.check_coords((mouse_x, mouse_y))
 
-            self.heroes_lock.draw(self.heroes_lock_screen)
+            self.check_hero()  # проверить наборы
+
+            if self.ischange_smiles_picture:
+                self.set_of_heroes = (self.set_of_heroes + self.change_smiles_picture_side) % 2
+
+                self.hero_sprite.image = self.get_picture()
+                self.ischange_smiles_picture = False
+
+            self.hero_sprites_group.draw(self.hero_screen)
+            if self.isdraw_heroes_lock:
+                self.heroes_lock_sprites_group.draw(self.heroes_lock_screen)
             self.static_elements_sprites_group.draw(self.static_elements_screen)
-            self.draw()
+            self.draw_texts()
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
@@ -248,6 +293,7 @@ class MainMenu:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
+                    self.update_db()
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # print(board.get_click(event.pos))  # вывод координат клетки ad
@@ -255,8 +301,9 @@ class MainMenu:
 
             self.clock.tick(self.fps)
             pygame.display.flip()
-
+        self.update_db()
         if self.isgame_start:
+
             self.game_start()
             # self.running = False
         else:
@@ -281,15 +328,28 @@ class MainMenu:
         width, height = self.arrow_left_sprite.image.get_size()
         x, y = self.arrow_left_sprite_x, self.arrow_left_sprite_y
         if self.check_click(click_x, click_y, x, y, width, height):
-            self.ischange_smiles_picture = True
-            self.change_smiles_picture_side = -1
+            if button_down:
+                self.ischange_smiles_picture = True
+                self.change_smiles_picture_side = -1
 
     def check_right_arrow(self, click_x, click_y, button_down):
         width, height = self.arrow_right_sprite.image.get_size()
         x, y = self.arrow_right_sprite_x, self.arrow_right_sprite_y
         if self.check_click(click_x, click_y, x, y, width, height):
-            self.ischange_smiles_picture = True
-            self.change_smiles_picture_side = 1
+            if button_down:
+                self.ischange_smiles_picture = True
+                self.change_smiles_picture_side = 1
+
+    def check_hero(self):
+        if self.set_of_heroes_isbought:  # если не куплен
+            self.isdraw_heroes_lock = True
+            if self.coins_count >= self.set_of_heroes_coins_need:  # если монет хватает
+                self.isdraw_heroes_lock_text = True
+                # рисовать кнопку купить
+            else:
+                # рисовать текст
+                self.isdraw_heroes_lock_text = True
+
 
     def check_play_button(self, click_x, click_y, button_down):
         width, height = self.play_sprite.image.get_size()
@@ -316,7 +376,7 @@ class MainMenu:
         # self.running = True
         # self.pygame_init()
 
-    def draw(self):
+    def draw_texts(self):
         # self.draw_rect(self.play_rect_x, self.play_rect_y,
         #                self.play_rect_width, self.play_rect_height, self.play_rect_color)
         self.draw_text(f"{str(self.best_score)}",
@@ -326,6 +386,8 @@ class MainMenu:
                        self.coins_count_text_center_x, self.coins_count_text_center_y,
                        self.best_score_and_coins_count_text_color, self.best_score_and_coins_count_text_size)
         self.draw_text(f"ИГРАТЬ", self.play_text_center_x, self.play_text_center_y, self.play_text_color, self.play_text_size)
+        if self.isdraw_heroes_lock_text:  # сли нужно рисовать текст
+            self.draw_text(f"{str(self.set_of_heroes_coins_need)}", self.set_of_heroes_text_center_x, self.set_of_heroes_text_center_y, self.set_of_heroes_text_color, self.set_of_heroes_text_size)
         # self.draw_text(f"Рекорд: {self.best_score}", self.best_score_text_x, self.best_score_text_y, self.best_score_text_color)  # счет
 
     def draw_text(self, to_write, center_x, center_y, color, size):
@@ -644,11 +706,15 @@ class Game:
             self.background_screen.fill('white')
 
             self.ismiss = True  # нужно ли уменьшать время
-            self.level_time = max(1, self.level_time)
+            self.level_time = min(59, max(1, self.level_time))
 
             seconds = round(self.level_time + self.penalty - (pygame.time.get_ticks() - start_ticks) / 1000)
-            seconds_res = time.gmtime(seconds)
-            current_level_time = time.strftime("%S", seconds_res)
+            if seconds <= 0:
+                self.update_db()
+                self.running = False
+            else:
+                seconds_res = time.gmtime(seconds)
+                current_level_time = time.strftime("%S", seconds_res)
 
             mouse_x, mouse_y = pygame.mouse.get_pos()
             aim_x, aim_y = mouse_x, mouse_y
@@ -680,11 +746,8 @@ class Game:
             if int(self.score) > int(self.best_score):
                 self.best_score = self.score
 
-            info_board.draw(current_level_time, self.score, self.coins_count, self.best_score)
 
-            if seconds <= 0:
-                self.update_db()
-                self.running = False
+            info_board.draw(current_level_time, self.score, self.coins_count, self.best_score)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -712,22 +775,25 @@ class Game:
                     hero.move()
                 else:
                     self.isupdate_level = True
+
                     self.score += 1
+                    self.penalty = 0
+                    self.coins_count += 1
+
+                    start_ticks = pygame.time.get_ticks()
+                    time_penalty_text_start_tick = pygame.time.get_ticks()
+
                     self.create_level()
                     self.create_v()
-                    self.penalty = 0
-                    # self.level_time += self.delta_time
-                    self.coins_count += 1
-                    start_ticks = pygame.time.get_ticks()
                     break
-
-            self.level_time = min(59, max(1, self.level_time))
 
             # удалить спрайты смайлов и обновить уровень
             if self.isupdate_level:
                 self.remove_heroes(self.heroes_sprites_group)
                 self.update_level(self.level)
+
                 self.isupdate_level = False
+                self.isdraw_time_penalty_text = False
 
             # условие появления черного экрана
             if self.score > self.black_rect_level:
@@ -938,6 +1004,7 @@ class Hero(pygame.sprite.Sprite):
             self.rect.y = rnd.randrange(70, GAME_FILED_HEIGHT)
 
     def update(self, *args):
+
         if args and args[0].type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(args[0].pos):
             if self.wanted and not self.table_info:
                 self.update_level = True
