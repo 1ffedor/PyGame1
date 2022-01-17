@@ -348,7 +348,8 @@ class MainMenu:
         self.check_play_button(click_x, click_y, button_down)
         if button_down:
             self.check_arrows(click_x, click_y, button_down)
-            self.check_buy_button(click_x, click_y, button_down)
+            if self.isdraw_buy_button:
+                self.check_buy_button(click_x, click_y, button_down)
 
     def check_arrows(self, click_x, click_y, button_down):
         self.check_left_arrow(click_x, click_y, button_down)
@@ -409,7 +410,6 @@ class MainMenu:
 
     def game_start(self):
         Game().run() # level_start, best_score
-
         # Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
         #              DIRECTORY_HEROES_LARGE_NAME).run() # level_start, best_score
         # self.running = True
@@ -519,6 +519,11 @@ class SelectionMenu:
         self.main_sprite.rect.y = self.main_sprite_y
         self.static_elements_sprites_group.add(self.main_sprite)  # добавим спрайт в группу
 
+        self.time_text_center_x = SELECTION_MENU_TIME_TEXT_CENTER_X
+        self.time_text_center_y = SELECTION_MENU_TIME_TEXT_CENTER_Y
+        self.time_text_size = SELECTION_MENU_TIME_TEXT_SIZE
+        self.time_text_color = SELECTION_MENU_TIME_TEXT_COLOR
+
         self.start_game = False
         self.exit = False
         self.running = True
@@ -530,6 +535,7 @@ class SelectionMenu:
         # self.directory_heroes_large_name = directory_heroes_large_name
         self.isgame_start = False
         self.ismain_menu = False
+        self.time = 5
 
         if self.running:
             self.run()
@@ -539,17 +545,30 @@ class SelectionMenu:
         # self.ismiss = True  # нужно ли уменьшать время
 
     def run(self):
+        time_text_start_tick = pygame.time.get_ticks()
+        current_level_time = 5
+
         while self.running:
             self.background_screen.fill('white')
             self.restart_text_color = SELECTION_MENU_RESTART_TEXT_COLOR
             self.main_menu_text_color = SELECTION_MENU_MAIN_MENU_TEXT_COLOR
+
+            self.time = min(59, max(1, self.time))
+
+            seconds = round(self.time - (pygame.time.get_ticks() - time_text_start_tick) / 1000)
+            if seconds <= 0:
+                self.ismain_menu = True
+                self.running = False
+            else:
+                seconds_res = time.gmtime(seconds)
+                current_level_time = time.strftime("%S", seconds_res)
 
             mouse_x, mouse_y = pygame.mouse.get_pos()
             aim_x, aim_y = mouse_x, mouse_y
             self.check_coords((mouse_x, mouse_y))
 
             self.static_elements_sprites_group.draw(self.static_elements_screen)
-            self.draw()
+            self.draw(current_level_time)
 
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
@@ -557,6 +576,7 @@ class SelectionMenu:
                 self.aim_sprite.rect.x = aim_x - self.aim_size_x_half  # 25 - половина размера прицела
                 self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.aim_screen)
+
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -619,20 +639,22 @@ class SelectionMenu:
     def game_start(self):
         # Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
         #      DIRECTORY_HEROES_LARGE_NAME, self.level_start).run() # level_start, best_score
-        MainMenu.game_start()
+        Game().run()
         # self.running = True
         # self.pygame_init()
 
     def main_menu(self):
         MainMenu()
 
-    def draw(self):
+    def draw(self, time):
         self.draw_text(f"Меню",
                        self.main_menu_text_center_x, self.main_menu_text_center_y,
                        self.main_menu_text_color, self.main_menu_and_restart_text_size)
         self.draw_text(f"Рестарт",
                        self.restart_text_center_x, self.restart_text_center_y,
                        self.restart_text_color, self.main_menu_and_restart_text_size)
+        self.draw_text(f"00:{time}", self.time_text_center_x, self.time_text_center_y, self.time_text_color,
+                       self.time_text_size)
         # self.draw_text(f"{str(self.time)}", self.time_text_center_x, self.time_text_center_y, self.time_text_color, self.time_text_size)
 
     def draw_text(self, to_write, center_x, center_y, color, size):
