@@ -15,11 +15,114 @@ COLOR_NOT_WANTED = ""
 COLOR_WANTED = ""
 
 
+class MainLoop:
+
+    def __init__(self):
+        pygame.mixer.pre_init(44100, -16, 1, 512)  # важно вызвать до pygame.init()
+
+        self.pygame_init()
+        pygame.display.set_caption('Catch a Smile (v.0.1)')
+
+        # self.
+        self.ismain_menu_need = True
+        self.ismain_menu_opened = True
+        self.main_menu = MainMenu()
+
+        self.isselection_menu_need = False
+        self.isselection_menu_opened = False
+        self.selection_menu = SelectionMenu()
+
+        self.isgame_need = False
+        self.isgame_opened = False
+        self.game = Game()
+
+        self.running = True
+        self.run()
+
+    def run(self):
+        while self.running:
+            # print(1)
+            if self.ismain_menu_need:
+                self.main_menu.run()
+                self.ismain_menu_need = False
+                # self.ismain_menu_opened = True
+                if not self.main_menu.exit:
+                    # self.ismain_menu_opened = False
+                    self.isgame_need = True
+                else:
+                    self.running = False
+                    break
+
+            elif self.isgame_need:
+                self.game.run()
+                # Game().run()
+                self.isgame_need = False
+                # self.isgame_opened = True
+                if not self.game.exit:
+                    # self.isgame_opened = False
+                    self.isselection_menu_need = True
+                else:
+                    self.running = False
+                    break
+
+            elif self.isselection_menu_need:
+                self.selection_menu.run()
+                self.isselection_menu_need = False
+                # self.isselection_menu_opened = True
+                if not self.selection_menu.exit:
+                    # self.isgame_opened = False
+                    self.isselection_menu_need = True
+
+                    if self.selection_menu.ismain_menu:
+                        self.ismain_menu_need = True
+
+                    elif self.selection_menu.isgame_start:
+                        self.isgame_need = True
+                else:
+                    self.running = False
+                    break
+
+
+            # if self.ismain_menu_opened:
+            #     if not self.main_menu.exit:
+            #         self.ismain_menu_opened = False
+            #         self.isgame_need = True
+            #     else:
+            #         self.running = False
+            #         break
+            # elif self.isgame_opened:
+            #     if not self.game.exit:
+            #         self.isgame_opened = False
+            #         self.isselection_menu_need = True
+            #     else:
+            #         self.running = False
+            #         break
+            # elif self.isselection_menu_opened:
+
+            # elif self.isgame():
+
+
+
+    def pygame_quit(self):
+        pygame.quit()
+
+    def pygame_init(self):
+        pygame.init()
+
+
 class MainMenu:
 
     def __init__(self, ):
-        self.pygame_init()
-        pygame.display.set_caption('Catch a Smile (v.0.1)')
+        pygame.mixer.pre_init(44100, -16, 1, 512)  # важно вызвать до pygame.init()
+        #
+        # self.pygame_init()
+        # pygame.display.set_caption('Catch a Smile (v.0.1)')
+
+        #  фоновая музыка
+        self.main_melody = pygame.mixer.Sound(MAIN_MENU_MAIN_MELODY_DIRECTORY)
+        self.arrow_click = pygame.mixer.Sound(MAIN_MENU_ARROW_CLICK_DIRECTORY)
+        self.play_button_click = pygame.mixer.Sound(MAIN_MENU_PLAY_BUTTON_CLICK_DIRECTORY)
+        # self.main_melody = self.main_melody_sound.play()
 
         # константы
         self.size = SCREEN_SIZE
@@ -184,7 +287,6 @@ class MainMenu:
         self.set_of_heroes_buy_sprite.rect.y = self.set_of_heroes_buy_sprite_y
         self.buy_sprites_group.add(self.set_of_heroes_buy_sprite)  # добавим спрайт в группу
 
-
         # стрелки
         self.arrow_left_sprite = pygame.sprite.Sprite()  # создадим спрайт
         self.arrow_left_sprite.image = \
@@ -222,15 +324,15 @@ class MainMenu:
         # self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
         # self.directory_heroes_large_name = directory_heroes_large_name
 
-        self.ischange_smiles_picture = True # менять ли картинку
+        self.ischange_smiles_picture = True  # менять ли картинку
         self.change_smiles_picture_side = 0  # в какую сторону менять лево -1, право +1
         self.isdraw_heroes_lock_coins_text = False  # рисовать ли текст сколько монет осталось
         self.isdraw_heroes_lock_need_text = False  # рисовать ли текст требуется
         self.isdraw_buy_button = False  # кнопка купить
 
         self.isgame_start = False
-        if self.running:
-            self.run()
+        # if self.running:
+            # self.run()
         # self.delta_time = 1  # секунд
         # self.level_time = 200  # секунд
         #
@@ -283,6 +385,11 @@ class MainMenu:
         return hero_image
 
     def run(self):
+        # проигрывать фоновыую музыку
+        pygame.mixer.stop()
+        self.main_melody_sound = self.main_melody.play(-1)
+        self.running = True
+
         while self.running:
             self.background_screen.fill('white')
             self.play_text_color = MAIN_MENU_PLAY_TEXT_COLOR
@@ -303,10 +410,10 @@ class MainMenu:
 
             self.hero_sprites_group.draw(self.hero_screen)
             if self.isdraw_heroes_lock:
-
                 self.heroes_lock_sprites_group.draw(self.heroes_lock_screen)
 
             self.static_elements_sprites_group.draw(self.static_elements_screen)
+
             self.draw_texts()
             if self.isdraw_buy_button:
                 self.buy_sprites_group.draw(self.static_elements_screen)
@@ -322,6 +429,7 @@ class MainMenu:
                 if event.type == pygame.QUIT:
                     self.running = False
                     self.update_db()
+                    self.exit = True
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # print(board.get_click(event.pos))  # вывод координат клетки ad
@@ -329,13 +437,14 @@ class MainMenu:
 
             self.clock.tick(self.fps)
             pygame.display.flip()
-        self.update_db()
-        if self.isgame_start:
 
-            self.game_start()
+        # self.main_melody_sound.pause()
+        # self.update_db()
+        # if self.isgame_start:
+        #     self.game_start()
             # self.running = False
-        else:
-            self.pygame_quit()
+        # else:
+        #     self.pygame_quit()
 
     def pygame_quit(self):
         pygame.quit()
@@ -359,11 +468,15 @@ class MainMenu:
         if self.arrow_left_sprite.rect.collidepoint(click_x, click_y):
             self.ischange_smiles_picture = True
             self.change_smiles_picture_side = -1
+            # звук клика
+            self.arrow_click_sound = self.arrow_click.play()
 
     def check_right_arrow(self, click_x, click_y, button_down):
         if self.arrow_right_sprite.rect.collidepoint(click_x, click_y):
             self.ischange_smiles_picture = True
             self.change_smiles_picture_side = 1
+            # звук клика
+            self.arrow_click_sound = self.arrow_click.play()
 
     def check_buy_button(self, click_x, click_y, button_down):
         if self.set_of_heroes_buy_sprite.rect.collidepoint(click_x, click_y):
@@ -404,12 +517,16 @@ class MainMenu:
             if button_down:  # buttondown
                 self.isgame_start = True
                 self.running = False
+                # print("play")
+                self.play_button_click_sound = self.play_button_click.play()
             else:  # change color
                 self.play_text_color = "white"
                 self.draw_rect(x, y, width, height, "black")
 
     def game_start(self):
-        Game().run() # level_start, best_score
+        #
+        pass
+        # Game().run()  # level_start, best_score
         # Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
         #              DIRECTORY_HEROES_LARGE_NAME).run() # level_start, best_score
         # self.running = True
@@ -455,7 +572,7 @@ class MainMenu:
 class SelectionMenu:
 
     def __init__(self, ):
-        self.pygame_init()
+        # self.pygame_init()
 
         # константы
         self.size = SCREEN_SIZE
@@ -533,12 +650,14 @@ class SelectionMenu:
         #
         # self.directory_heroes_animation_small_name = DIRECTORY_HEROES_ANIMATION_SMALL_NAME
         # self.directory_heroes_large_name = directory_heroes_large_name
-        self.isgame_start = False
-        self.ismain_menu = False
+        # self.isgame_start = False
+        # self.ismain_menu = False
         self.time = 5
 
-        if self.running:
-            self.run()
+        self.exit = False
+
+        # if self.running:
+        #     self.run()
         # self.delta_time = 1  # секунд
         # self.level_time = 200  # секунд
         #
@@ -547,6 +666,12 @@ class SelectionMenu:
     def run(self):
         time_text_start_tick = pygame.time.get_ticks()
         current_level_time = 5
+
+        self.isgame_start = False
+        self.ismain_menu = False
+        self.running = True
+
+        pygame.mixer.pause()
 
         while self.running:
             self.background_screen.fill('white')
@@ -577,10 +702,10 @@ class SelectionMenu:
                 self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.aim_screen)
 
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
+                    self.exit = True
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     # print(board.get_click(event.pos))  # вывод координат клетки ad
@@ -589,13 +714,14 @@ class SelectionMenu:
             self.clock.tick(self.fps)
             pygame.display.flip()
 
-        if self.isgame_start:
-            self.game_start()
-            # self.running = False
-        elif self.ismain_menu:
-            self.main_menu()
-        else:
-            self.pygame_quit()
+        # if self.isgame_start:
+        #     self.game_start()
+        #     # self.running = False
+        # elif self.ismain_menu:
+        #     self.main_menu()
+        # else:
+        #     self.pygame_quit()
+        pygame.mixer.unpause()
 
     def pygame_quit(self):
         pygame.quit()
@@ -637,14 +763,16 @@ class SelectionMenu:
             return False
 
     def game_start(self):
+        pass
         # Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
         #      DIRECTORY_HEROES_LARGE_NAME, self.level_start).run() # level_start, best_score
-        Game().run()
+        # Game().run()
         # self.running = True
         # self.pygame_init()
 
     def main_menu(self):
-        MainMenu()
+        pass
+        # MainMenu()
 
     def draw(self, time):
         self.draw_text(f"Меню",
@@ -682,6 +810,14 @@ class Game:
 
     def __init__(self):  # , , pictures_heroes_large, directory_heroes_animation_small_name,
                  # directory_heroes_large_name level_start, best_score
+        # pygame.mixer.pre_init(44100, -16, 1, 512)  # важно вызвать до pygame.init()
+        #
+        # self.pygame_init()
+        # pygame.display.set_caption('Catch a Smile (v.0.1)')
+
+        # self.main_melody = pygame.mixer.Sound(MAIN_MENU_MAIN_MELODY_DIRECTORY)
+        self.hit = pygame.mixer.Sound(GAME_HIT_MELODY_DIRECTORY)
+        self.miss = pygame.mixer.Sound(GAME_MISS_MELODY_DIRECTORY)
 
         self.size = SCREEN_SIZE
         self.fps = FPS
@@ -753,24 +889,44 @@ class Game:
         self.time_penalty_text_color = GAME_TIME_PENALTY_TEXT_COLOR
         self.time_penalty_text_size = GAME_TIME_PENALTY_TEXT_SIZE
         self.isdraw_time_penalty_text = False
+        self.miss_sound_isplay = False
 
         self.ismiss = True  # нужно ли уменьшать время
+        self.ismain_menu = True
         # MainMenu()
-
         self.quit = False
+        self.exit = False
+        # self.run()
 
     def run(self):
+
+        self.isdraw_time_penalty_text = False
+        self.miss_sound_isplay = False
+
+        self.ismiss = True  # нужно ли уменьшать время
+        self.ismain_menu = True
+        # MainMenu()
+        self.quit = False
+        self.exit = False
+
+        self.delta_time = 5  # на сколько секунд увеличится время при попадании
+        self.level_time = 20  # секунд
+        self.penalty = 0
+        self.level = 1
+        self.score = 0
+        print(self.level)
         self.update_level(self.level)
         i = 0  # счетчик обновления смайла
         start_ticks = pygame.time.get_ticks()  # starter tick
         time_penalty_text_start_tick = pygame.time.get_ticks()
+        self.running = True
+
         info_board = InfoBoard(self.static_elements_screen, self.score, self.best_score, self.level_time)
         while self.running:
             self.background_screen.fill('white')
 
             self.ismiss = True  # нужно ли уменьшать время
             self.level_time = min(59, max(1, self.level_time))
-
             seconds = round(self.level_time + self.penalty - (pygame.time.get_ticks() - start_ticks) / 1000)
             if seconds <= 0:
                 self.update_db()
@@ -793,6 +949,10 @@ class Game:
 
             # штраф отрисовка
             if self.isdraw_time_penalty_text:
+                if self.miss_sound_isplay:
+                    self.miss_sound = self.miss.play()
+                    self.miss_sound_isplay = False
+
                 if (pygame.time.get_ticks() - time_penalty_text_start_tick) / 1000 < 0.2:
                     time_penalty_text_center_x, time_penalty_text_center_y = aim_x, aim_y + self.time_penalty_text_delta_y
                     self.draw_text(f"-{str(self.delta_time)}", time_penalty_text_center_x, time_penalty_text_center_y,
@@ -800,23 +960,22 @@ class Game:
                 else:
                     self.isdraw_time_penalty_text = False
 
+            if int(self.score) > int(self.best_score):
+                self.best_score = self.score
+
+            info_board.draw(current_level_time, self.score, self.coins_count, self.best_score)
+
             if pygame.mouse.get_focused():
                 pygame.mouse.set_visible(False)
                 self.aim_sprite.rect.x = aim_x - self.aim_size_x_half  # 25 - половина размера прицела
                 self.aim_sprite.rect.y = aim_y - self.aim_size_y_half  # 25 - половина размера прицела
                 self.aim_sprites_group.draw(self.aim_screen)
 
-            if int(self.score) > int(self.best_score):
-                self.best_score = self.score
-
-
-            info_board.draw(current_level_time, self.score, self.coins_count, self.best_score)
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.update_db()
                     self.running = False
-                    self.quit = True
+                    self.exit = True
 
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     self.heroes_sprites_group.update(event)
@@ -830,6 +989,7 @@ class Game:
                     # self.level_time -= 5
                     self.penalty -= 5
                     self.isdraw_time_penalty_text = True
+                    self.miss_sound_isplay = True
                     self.ismiss = False  # уменьшили время, уже не нужно
                     time_penalty_text_start_tick = pygame.time.get_ticks()  # штраф
 
@@ -846,15 +1006,15 @@ class Game:
                     start_ticks = pygame.time.get_ticks()
                     time_penalty_text_start_tick = pygame.time.get_ticks()
 
+                    self.hit_sound = self.hit.play()
+
                     self.create_level()
                     self.create_v()
                     break
 
             # удалить спрайты смайлов и обновить уровень
             if self.isupdate_level:
-                self.remove_heroes(self.heroes_sprites_group)
                 self.update_level(self.level)
-
                 self.isupdate_level = False
                 self.isdraw_time_penalty_text = False
 
@@ -865,16 +1025,19 @@ class Game:
             self.clock.tick(self.fps)
             pygame.display.flip()
 
-        if not self.quit:
-            SelectionMenu()
+        # if not self.quit:
+        #     SelectionMenu()
             # MainMenu()
         # /pygame.quit()
 
     def game_start(self):
         self.running = True
 
-    def game_quit(self):
+    def pygame_quit(self):
         pygame.quit()
+
+    def pygame_init(self):
+        pygame.init()
 
     def create_level(self):
         #  сначала парабола до 14 потом прямая
@@ -927,6 +1090,7 @@ class Game:
             hero.remove(sprites_group)
 
     def update_level(self, heroes_count):
+        self.remove_heroes(self.heroes_sprites_group)
         wanted = True
         table_info = True
         image_wanted, image_wanted_large, images_not_wanted = self.choose_picture()
@@ -1404,6 +1568,8 @@ if __name__ == '__main__':
     #     pygame.display.flip()
     # pygame.quit()
     # level_start, best_score = 100, 1
-    MainMenu() 
+    # MainMenu()
+    # Game()
+    MainLoop()
 #     Game(PICTURES_HEROES_ANIMATION_SMALL, PICTURES_HEROES_LARGE, DIRECTORY_HEROES_ANIMATION_SMALL_NAME,
 # DIRECTORY_HEROES_LARGE_NAME, level_start, best_score).run()

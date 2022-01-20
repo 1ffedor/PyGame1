@@ -51,6 +51,9 @@ LEVEL_START = 1
 
 # шрифт Sansus Webiss...
 # название левый верхний угол
+MAIN_MENU_MAIN_MELODY_DIRECTORY = r"data\music\untitled.ogg"
+
+
 MAIN_MENU_TITLE_SPRITE_DIRECTORY = r"data\main_menu"
 MAIN_MENU_TITLE_SPRITE_NAME = "title.png"
 
@@ -79,6 +82,10 @@ MAIN_MENU_BEST_SCORE_AND_COINS_COUNT_TEXT_SIZE = 40
 
 
 # кнопка играть
+# звук
+MAIN_MENU_PLAY_BUTTON_CLICK_DIRECTORY = r"data\music\button_click.ogg"
+
+
 MAIN_MENU_PLAY_SPRITE_DIRECTORY = r"data\main_menu"
 MAIN_MENU_PLAY_SPRITE_NAME = "play2.png"
 
@@ -118,6 +125,7 @@ MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_X = 500
 MAIN_MENU_SET_OF_HEROES_LOCK_SPRITE_Y = 500
 
 # стрелки
+MAIN_MENU_ARROW_CLICK_DIRECTORY = r"data\music\arrow_click.ogg"
 
 # левая
 MAIN_MENU_ARROW_LEFT_SPRITE_DIRECTORY = r"data\main_menu"
@@ -137,6 +145,9 @@ MAIN_MENU_ARROW_RIGHT_SPRITE_Y = 634
 
 # --------------------------------
 # GAME
+GAME_HIT_MELODY_DIRECTORY = "data/music/hit.ogg"
+GAME_MISS_MELODY_DIRECTORY = "data/music/miss.ogg"
+
 GAME_FIELD_WIDTH = 800 - 50
 GAME_FILED_HEIGHT = HEIGHT - 50
 GAME_FIELD = (GAME_FIELD_WIDTH, GAME_FILED_HEIGHT)
